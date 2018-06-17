@@ -696,6 +696,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "wasm-tests"
+version = "1.0.0"
+dependencies = [
+ "nan-preserving-float 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "parity-wasm 0.27.6 (registry+https://github.com/rust-lang/crates.io-index)",
+ "wasm 0.1.0",
+ "wasmi 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
 name = "wasmi"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
