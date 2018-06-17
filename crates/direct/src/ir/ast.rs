@@ -145,7 +145,8 @@ pub enum Expression<'input> {
     Const(ConstExpression),
 
     VariableAccess(Identifier<'input>),
-    Plus(PlusExpression<'input>),
+    Plus(BinaryExpression<'input>),
+    Minus(BinaryExpression<'input>),
 }
 
 impl fmt::Debug for Expression<'input> {
@@ -154,6 +155,7 @@ impl fmt::Debug for Expression<'input> {
             Expression::Const(constant) => constant,
             Expression::VariableAccess(id) => id,
             Expression::Plus(plus) => plus,
+            Expression::Minus(minus) => minus,
         };
 
         write!(f, "{:?}", value)
@@ -161,12 +163,12 @@ impl fmt::Debug for Expression<'input> {
 }
 
 #[derive(PartialEq, Clone, new)]
-pub struct PlusExpression<'input> {
+pub struct BinaryExpression<'input> {
     pub lhs: Box<Expression<'input>>,
     pub rhs: Box<Expression<'input>>,
 }
 
-impl fmt::Debug for PlusExpression<'input> {
+impl fmt::Debug for BinaryExpression<'input> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?} + {:?}", self.lhs, self.rhs)
     }

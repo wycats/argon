@@ -5,7 +5,8 @@ pub enum Expression {
     Const(ConstExpression),
 
     VariableAccess(u32),
-    Plus(Box<PlusExpression>),
+    Plus(Box<BinaryExpression>),
+    Minus(Box<BinaryExpression>),
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -35,7 +36,7 @@ impl TypedBlock {
 }
 
 #[derive(Debug, PartialEq, Eq)]
-pub struct PlusExpression {
+pub struct BinaryExpression {
     pub lhs: TypedExpression,
     pub rhs: TypedExpression,
 }
@@ -125,17 +126,31 @@ impl ast::Expression<'input> {
                 TypedExpression::new(expr, arg.ty)
             }
 
-            ast::Expression::Plus(ast::PlusExpression { lhs, rhs }) => {
+            ast::Expression::Plus(ast::BinaryExpression { lhs, rhs }) => {
                 let lhs = lhs.ast_to_hir(enclosing_function, enclosing_module)?;
                 let rhs = rhs.ast_to_hir(enclosing_function, enclosing_module)?;
 
                 if lhs.ty == rhs.ty {
                     let ty = lhs.ty;
-                    let expr = Expression::Plus(Box::new(PlusExpression { lhs, rhs }));
+                    let expr = Expression::Plus(Box::new(BinaryExpression { lhs, rhs }));
 
                     TypedExpression::new(expr, ty)
                 } else {
                     return Err(TypeError::MismatchedPlus(lhs.ty, rhs.ty));
+                }
+            }
+
+            ast::Expression::Minus(ast::BinaryExpression { lhs, rhs }) => {
+                let lhs = lhs.ast_to_hir(enclosing_function, enclosing_module)?;
+                let rhs = rhs.ast_to_hir(enclosing_function, enclosing_module)?;
+
+                if lhs.ty == rhs.ty {
+                    let ty = lhs.ty;
+                    let expr = Expression::Minus(Box::new(BinaryExpression { lhs, rhs }));
+
+                    TypedExpression::new(expr, ty)
+                } else {
+                    return Err(TypeError::MismatchedMinus(lhs.ty, rhs.ty));
                 }
             }
         };

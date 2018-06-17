@@ -136,6 +136,6 @@ impl std::ops::Add for ast::Expression<'static> {
     type Output = ast::Expression<'static>;
 
     fn add(self, rhs: ast::Expression<'static>) -> ast::Expression<'static> {
-        ast::Expression::Plus(ast::PlusExpression::new(Box::new(self), Box::new(rhs)))
+        ast::Expression::Plus(ast::BinaryExpression::new(Box::new(self), Box::new(rhs)))
     }
 }

@@ -1,5 +1,5 @@
 use crate::ast;
-use crate::compile::math::{binary_op_type, plus_op, BinaryType};
+use crate::compile::math::{binary_op_type, math_op, BinaryType, MathOperator};
 use crate::ir::{hir, ConstExpression, Type, TypeError};
 use parity_wasm::{builder, elements};
 
@@ -86,14 +86,35 @@ fn compile_expression(
             }
 
             hir::Expression::Plus(plus) => {
-                let hir::PlusExpression { lhs, rhs } = &**plus;
+                let hir::BinaryExpression { lhs, rhs } = &**plus;
                 let ty = binary_op_type(lhs.ty, rhs.ty);
 
                 match ty {
                     BinaryType::Same(ty) => {
                         compile_expression(body, lhs, function);
                         compile_expression(body, rhs, function);
-                        body.push(plus_op(ty));
+                        body.push(math_op(MathOperator::Add, ty));
+                    }
+
+                    BinaryType::CoerceLeft(_) | BinaryType::CoerceRight(_) => {
+                        unimplemented!("[TODO?] No support for coercions yet")
+                    }
+
+                    BinaryType::Incompatible(lhs, rhs) => {
+                        panic!("TypeError: {:?} + {:?} is invalid", lhs, rhs)
+                    }
+                }
+            }
+
+            hir::Expression::Minus(plus) => {
+                let hir::BinaryExpression { lhs, rhs } = &**plus;
+                let ty = binary_op_type(lhs.ty, rhs.ty);
+
+                match ty {
+                    BinaryType::Same(ty) => {
+                        compile_expression(body, lhs, function);
+                        compile_expression(body, rhs, function);
+                        body.push(math_op(MathOperator::Sub, ty));
                     }
 
                     BinaryType::CoerceLeft(_) | BinaryType::CoerceRight(_) => {

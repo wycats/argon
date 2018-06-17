@@ -42,20 +42,25 @@ Block: Block<'input> = {
 
 Expression: Expression<'input> = {
     <PlusExpression>,
-    <PlusLeft>,
+    <MinusExpression>,
+    <PlusMinusLeft>,
 }
 
 VariableExpression: Expression<'input> = {
     <Identifier> => Expression::VariableAccess(<>),
 }
 
-PlusLeft: Expression<'input> = {
+PlusMinusLeft: Expression<'input> = {
     <VariableExpression>,
     <I32>
 }
 
 PlusExpression: Expression<'input> = {
-    <lhs:PlusLeft> "+" <rhs:Expression> => Expression::Plus(PlusExpression::new(Box::new(lhs), Box::new(rhs)))
+    <lhs:PlusMinusLeft> "+" <rhs:Expression> => Expression::Plus(BinaryExpression::new(Box::new(lhs), Box::new(rhs)))
+}
+
+MinusExpression: Expression<'input> = {
+    <lhs:PlusMinusLeft> "-" <rhs:Expression> => Expression::Minus(BinaryExpression::new(Box::new(lhs), Box::new(rhs)))
 }
 
 Identifier: Identifier<'input> = <r"[a-zA-Z][a-zA-Z0-9]*"> => Identifier::new(<>);

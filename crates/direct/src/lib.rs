@@ -8,14 +8,14 @@ extern crate derive_new;
 #[macro_use]
 extern crate lalrpop_util;
 
-mod compile;
+pub mod compile;
 pub mod ir;
 
 pub mod test_helpers;
 
 lalrpop_mod!(pub grammar);
 
-pub use self::compile::module::compile_module;
+pub use self::compile::*;
 pub use self::grammar::ModuleParser;
 pub use self::ir::*;
 

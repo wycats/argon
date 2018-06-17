@@ -3,6 +3,7 @@ use std::fmt;
 #[derive(Debug)]
 pub enum TypeError {
     MismatchedPlus(Type, Type),
+    MismatchedMinus(Type, Type),
 }
 
 #[derive(Eq, PartialEq, Copy, Clone)]

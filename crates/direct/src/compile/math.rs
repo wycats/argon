@@ -1,8 +1,8 @@
 use crate::ir::Type;
-use parity_wasm::elements;
+use parity_wasm::elements::{self, Opcode};
 
-#[derive(Copy, Clone, Eq, PartialEq)]
-crate enum MathType {
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+pub enum MathType {
     I32,
     I64,
     F32,
@@ -27,11 +27,36 @@ crate fn binary_op_type(lhs: Type, rhs: Type) -> BinaryType {
     }
 }
 
-crate fn plus_op(ty: MathType) -> elements::Opcode {
-    match ty {
-        MathType::I32 => elements::Opcode::I32Add,
-        MathType::I64 => elements::Opcode::I64Add,
-        MathType::F32 => elements::Opcode::F32Add,
-        MathType::F64 => elements::Opcode::F64Add,
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+pub enum MathOperator {
+    Add,
+    Sub,
+    Mul,
+    Div,
+    Rem,
+    And,
+    Or,
+    Xor,
+    ShiftLeft,
+    ShiftRight,
+}
+
+crate fn math_op(operator: MathOperator, ty: MathType) -> elements::Opcode {
+    match operator {
+        MathOperator::Add => match ty {
+            MathType::I32 => Opcode::I32Add,
+            MathType::I64 => Opcode::I64Add,
+            MathType::F32 => Opcode::F32Add,
+            MathType::F64 => Opcode::F64Add,
+        },
+
+        MathOperator::Sub => match ty {
+            MathType::I32 => Opcode::I32Sub,
+            MathType::I64 => Opcode::I64Sub,
+            MathType::F32 => Opcode::F32Sub,
+            MathType::F64 => Opcode::F64Sub,
+        },
+
+        _ => unimplemented!("Unimplemented operator {:?} for {:?}", operator, ty),
     }
 }
