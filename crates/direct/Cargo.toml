@@ -1,0 +1,27 @@
+cargo-features = ["edition"]
+
+[package]
+name = "wasm"
+version = "0.1.0"
+authors = ["Yehuda Katz <wycats@gmail.com>"]
+build = "build.rs" # LALRPOP preprocessing
+edition = "2018"
+
+# The generated code depends on lalrpop-util.
+#
+# The generated tokenizer depends on the regex crate.
+#
+# (If you write your own tokenizer, or already have the regex
+# crate, you can skip this dependency.)
+[dependencies]
+lalrpop-util = { git = "https://github.com/wycats/lalrpop.git", branch = "module_attributes" }
+regex = "1.0.0"
+derive-new = "0.5.4"
+parity-wasm = "0.27.0"
+
+[dev-dependencies]
+wasmi = "0.2.0"
+
+# Add a build-time dependency on the lalrpop library:
+[build-dependencies]
+lalrpop =  { git = "https://github.com/wycats/lalrpop.git", branch = "module_attributes" }

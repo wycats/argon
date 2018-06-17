@@ -1,0 +1,62 @@
+#![allow(rust_2018_idioms)]
+
+use crate::ast::*;
+use crate::ir::*;
+use std::str::FromStr;
+
+grammar;
+
+pub Module: Module<'input> = {
+    (<ModifiedFunction*>) => Module::new(<>)
+}
+
+ModifiedFunction: Function<'input> = {
+    "export" <Function> => <>.exported(),
+    <Function>
+}
+
+Function: Function<'input> = {
+    "def" <name:Identifier> <args:Parameters> "->" <ty:Type> <body:Block> => Function::new(name, args, ty, body),
+    "def" <name:Identifier> <args:Parameters> <body:Block> => Function::new(name, args, Type::Void, body)
+}
+
+Parameters: Parameters<'input> = {
+    "(" <Parameter> <("," <Parameter>)*> ")" => Parameters::from_parser(<>),
+    "(" ")" => Parameters::empty()
+}
+
+Parameter: Parameter<'input> = {
+    <Identifier> ":" <Type> => Parameter::new(<>)
+}
+
+Type: Type = {
+    "i32" => Type::I32,
+    "i64" => Type::I64,
+    "f32" => Type::F32,
+    "f64" => Type::F64,
+}
+
+Block: Block<'input> = {
+    "{" <(<Expression>)*> "}" => Block::new(<>)
+}
+
+Expression: Expression<'input> = {
+    <PlusExpression>,
+    <PlusLeft>,
+}
+
+VariableExpression: Expression<'input> = {
+    <Identifier> => Expression::VariableAccess(<>),
+}
+
+PlusLeft: Expression<'input> = {
+    <VariableExpression>,
+    <I32>
+}
+
+PlusExpression: Expression<'input> = {
+    <lhs:PlusLeft> "+" <rhs:Expression> => Expression::Plus(PlusExpression::new(Box::new(lhs), Box::new(rhs)))
+}
+
+Identifier: Identifier<'input> = <r"[a-zA-Z][a-zA-Z0-9]*"> => Identifier::new(<>);
+I32: Expression<'input> = <r"[0-9]+"> => Expression::Const(ConstExpression::I32(FromStr::from_str(<>).unwrap()));
