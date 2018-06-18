@@ -1,17 +1,19 @@
+use crate::compile::math::{MathOperator, MathType};
 use std::fmt;
 
 #[derive(Debug)]
 pub enum TypeError {
-    MismatchedPlus(Type, Type),
-    MismatchedMinus(Type, Type),
+    MismatchedBinary(MathOperator, Type, Type),
 }
 
-#[derive(Eq, PartialEq, Copy, Clone)]
+#[derive(PartialEq, Copy, Clone)]
 pub enum ConstExpression {
     I32(i32),
     I64(i64),
-    F32(u32),
-    F64(u64),
+    U32(u32),
+    U64(u64),
+    F32(f32),
+    F64(f64),
 }
 
 impl fmt::Debug for ConstExpression {
@@ -19,34 +21,52 @@ impl fmt::Debug for ConstExpression {
         match self {
             ConstExpression::I32(int) => write!(f, "{:?}", *int),
             ConstExpression::I64(int) => write!(f, "{:?}", *int),
-            ConstExpression::F32(float) => write!(f, "{:?}", *float as f32),
-            ConstExpression::F64(float) => write!(f, "{:?}", *float as f64),
+            ConstExpression::U32(int) => write!(f, "{:?}", *int),
+            ConstExpression::U64(int) => write!(f, "{:?}", *int),
+            ConstExpression::F32(float) => write!(f, "{:?}", *float),
+            ConstExpression::F64(float) => write!(f, "{:?}", *float),
         }
     }
 }
 
 #[derive(Eq, PartialEq, Copy, Clone)]
 pub enum Type {
-    I32,
-    I64,
-    F32,
-    F64,
+    Math(MathType),
     Void,
+}
+
+impl Type {
+    pub fn i32() -> Type {
+        Type::Math(MathType::I32)
+    }
+
+    pub fn i64() -> Type {
+        Type::Math(MathType::I64)
+    }
+
+    pub fn u32() -> Type {
+        Type::Math(MathType::U32)
+    }
+
+    pub fn u64() -> Type {
+        Type::Math(MathType::U64)
+    }
+
+    pub fn f32() -> Type {
+        Type::Math(MathType::F32)
+    }
+
+    pub fn f64() -> Type {
+        Type::Math(MathType::F64)
+    }
 }
 
 impl fmt::Debug for Type {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "{}",
-            match self {
-                Type::I32 => "i32",
-                Type::I64 => "i64",
-                Type::F32 => "f32",
-                Type::F64 => "f64",
-                Type::Void => "void",
-            }
-        )
+        match self {
+            Type::Math(ty) => write!(f, "{:?}", ty),
+            Type::Void => write!(f, "void"),
+        }
     }
 }
 

@@ -1,20 +1,20 @@
 use crate::ir::{ast, ConstExpression, FunctionModifiers, Type, TypeError};
+use crate::{MathOperator, MathType};
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq)]
 pub enum Expression {
     Const(ConstExpression),
 
     VariableAccess(u32),
-    Plus(Box<BinaryExpression>),
-    Minus(Box<BinaryExpression>),
+    Binary(MathOperator, Box<BinaryExpression>),
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq)]
 pub struct TypedModule<'input> {
     pub funcs: Vec<TypedFunction<'input>>,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq)]
 pub struct TypedFunction<'input> {
     pub name: &'input str,
     pub params: Vec<Type>,
@@ -24,7 +24,7 @@ pub struct TypedFunction<'input> {
     pub modifiers: FunctionModifiers,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq)]
 pub struct TypedBlock {
     expressions: Vec<TypedExpression>,
 }
@@ -35,14 +35,14 @@ impl TypedBlock {
     }
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq)]
 pub struct BinaryExpression {
     pub lhs: TypedExpression,
     pub rhs: TypedExpression,
 }
 
 #[allow(unused)]
-#[derive(Debug, PartialEq, Eq, new)]
+#[derive(Debug, PartialEq, new)]
 pub struct TypedExpression {
     pub expression: Expression,
     pub ty: Type,
@@ -77,7 +77,7 @@ impl ast::Function<'input> {
         let mut expressions = vec![];
 
         for expr in &self.body.expressions {
-            expressions.push(expr.ast_to_hir(self, enclosing_module)?);
+            expressions.push(expr.ast_to_hir(None, self, enclosing_module)?);
         }
 
         Ok(TypedFunction {
@@ -95,26 +95,61 @@ impl ast::Function<'input> {
 impl ast::Expression<'input> {
     fn ast_to_hir(
         &self,
+        hint: Option<Type>,
         enclosing_function: &ast::Function,
         enclosing_module: &ast::Module,
     ) -> Result<TypedExpression, TypeError> {
         let expr = match self {
             ast::Expression::Const(constant) => match constant {
-                c @ ConstExpression::I32(_) => {
-                    TypedExpression::new(Expression::Const(*c), Type::I32)
-                }
+                ast::ConstExpression::Integer(int) => match hint {
+                    Some(Type::Math(MathType::I32)) => TypedExpression::new(
+                        Expression::Const(ConstExpression::I32(*int as i32)),
+                        Type::Math(MathType::I32),
+                    ),
 
-                c @ ConstExpression::I64(_) => {
-                    TypedExpression::new(Expression::Const(*c), Type::I64)
-                }
+                    Some(Type::Math(MathType::I64)) => TypedExpression::new(
+                        Expression::Const(ConstExpression::I64(*int)),
+                        Type::Math(MathType::I64),
+                    ),
 
-                c @ ConstExpression::F32(_) => {
-                    TypedExpression::new(Expression::Const(*c), Type::F32)
-                }
+                    Some(Type::Math(MathType::U32)) => TypedExpression::new(
+                        Expression::Const(ConstExpression::U32(*int as u32)),
+                        Type::Math(MathType::U32),
+                    ),
 
-                c @ ConstExpression::F64(_) => {
-                    TypedExpression::new(Expression::Const(*c), Type::F64)
-                }
+                    Some(Type::Math(MathType::U64)) => TypedExpression::new(
+                        Expression::Const(ConstExpression::U64(*int as u64)),
+                        Type::Math(MathType::U64),
+                    ),
+
+                    Some(Type::Math(MathType::F32)) => TypedExpression::new(
+                        Expression::Const(ConstExpression::F32(*int as f32)),
+                        Type::Math(MathType::F32),
+                    ),
+
+                    Some(Type::Math(MathType::F64)) => TypedExpression::new(
+                        Expression::Const(ConstExpression::F64(*int as f64)),
+                        Type::Math(MathType::F64),
+                    ),
+
+                    rest => unimplemented!(),
+                },
+
+                ast::ConstExpression::Float(float) => match hint {
+                    Some(Type::Math(MathType::F32)) => TypedExpression::new(
+                        Expression::Const(ConstExpression::F32(*float as f32)),
+                        Type::Math(MathType::F32),
+                    ),
+
+                    Some(Type::Math(MathType::F64)) => TypedExpression::new(
+                        Expression::Const(ConstExpression::F64(*float)),
+                        Type::Math(MathType::F64),
+                    ),
+
+                    rest => unimplemented!(),
+                },
+
+                rest => unimplemented!(),
             },
 
             ast::Expression::VariableAccess(id) => {
@@ -126,35 +161,31 @@ impl ast::Expression<'input> {
                 TypedExpression::new(expr, arg.ty)
             }
 
-            ast::Expression::Plus(ast::BinaryExpression { lhs, rhs }) => {
-                let lhs = lhs.ast_to_hir(enclosing_function, enclosing_module)?;
-                let rhs = rhs.ast_to_hir(enclosing_function, enclosing_module)?;
-
-                if lhs.ty == rhs.ty {
-                    let ty = lhs.ty;
-                    let expr = Expression::Plus(Box::new(BinaryExpression { lhs, rhs }));
-
-                    TypedExpression::new(expr, ty)
-                } else {
-                    return Err(TypeError::MismatchedPlus(lhs.ty, rhs.ty));
-                }
-            }
-
-            ast::Expression::Minus(ast::BinaryExpression { lhs, rhs }) => {
-                let lhs = lhs.ast_to_hir(enclosing_function, enclosing_module)?;
-                let rhs = rhs.ast_to_hir(enclosing_function, enclosing_module)?;
-
-                if lhs.ty == rhs.ty {
-                    let ty = lhs.ty;
-                    let expr = Expression::Minus(Box::new(BinaryExpression { lhs, rhs }));
-
-                    TypedExpression::new(expr, ty)
-                } else {
-                    return Err(TypeError::MismatchedMinus(lhs.ty, rhs.ty));
-                }
+            ast::Expression::Binary(operator, box ast::BinaryExpression { lhs, rhs }) => {
+                typed_binary(*operator, lhs, rhs, enclosing_function, enclosing_module)?
             }
         };
 
         Ok(expr)
+    }
+}
+
+fn typed_binary(
+    operator: MathOperator,
+    lhs: &ast::Expression,
+    rhs: &ast::Expression,
+    enclosing_function: &ast::Function,
+    enclosing_module: &ast::Module,
+) -> Result<TypedExpression, TypeError> {
+    let lhs = lhs.ast_to_hir(None, enclosing_function, enclosing_module)?;
+    let rhs = rhs.ast_to_hir(Some(lhs.ty), enclosing_function, enclosing_module)?;
+
+    if lhs.ty == rhs.ty {
+        let ty = lhs.ty;
+        let expr = Expression::Binary(operator, Box::new(BinaryExpression { lhs, rhs }));
+
+        Ok(TypedExpression::new(expr, ty))
+    } else {
+        return Err(TypeError::MismatchedBinary(operator, lhs.ty, rhs.ty));
     }
 }

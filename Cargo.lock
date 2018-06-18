@@ -699,6 +699,7 @@ dependencies = [
 name = "wasm-tests"
 version = "1.0.0"
 dependencies = [
+ "lalrpop-util 0.15.2 (git+https://github.com/wycats/lalrpop.git?branch=module_attributes)",
  "nan-preserving-float 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "parity-wasm 0.27.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "wasm 0.1.0",

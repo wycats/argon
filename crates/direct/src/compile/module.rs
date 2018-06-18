@@ -1,6 +1,7 @@
 use crate::ast;
-use crate::compile::math::{binary_op_type, math_op, BinaryType, MathOperator};
+use crate::compile::math::{binary_op_type, math_op, BinaryType};
 use crate::ir::{hir, ConstExpression, Type, TypeError};
+use crate::MathType;
 use parity_wasm::{builder, elements};
 
 struct CodeLocation {
@@ -77,44 +78,32 @@ fn compile_expression(
             hir::Expression::Const(constant) => match constant {
                 ConstExpression::I32(int) => body.push(elements::Opcode::I32Const(*int)),
                 ConstExpression::I64(int) => body.push(elements::Opcode::I64Const(*int)),
-                ConstExpression::F32(float) => body.push(elements::Opcode::F32Const(*float)),
-                ConstExpression::F64(float) => body.push(elements::Opcode::F64Const(*float)),
+                ConstExpression::U32(int) => body.push(elements::Opcode::I32Const(unsafe {
+                    std::mem::transmute(*int)
+                })),
+                ConstExpression::U64(int) => body.push(elements::Opcode::I64Const(unsafe {
+                    std::mem::transmute(*int)
+                })),
+                ConstExpression::F32(float) => body.push(elements::Opcode::F32Const(unsafe {
+                    std::mem::transmute(*float)
+                })),
+                ConstExpression::F64(float) => body.push(elements::Opcode::F64Const(unsafe {
+                    std::mem::transmute(*float)
+                })),
             },
 
             hir::Expression::VariableAccess(local) => {
                 body.push(elements::Opcode::GetLocal(*local));
             }
 
-            hir::Expression::Plus(plus) => {
-                let hir::BinaryExpression { lhs, rhs } = &**plus;
+            hir::Expression::Binary(operator, box hir::BinaryExpression { lhs, rhs }) => {
                 let ty = binary_op_type(lhs.ty, rhs.ty);
 
                 match ty {
                     BinaryType::Same(ty) => {
                         compile_expression(body, lhs, function);
                         compile_expression(body, rhs, function);
-                        body.push(math_op(MathOperator::Add, ty));
-                    }
-
-                    BinaryType::CoerceLeft(_) | BinaryType::CoerceRight(_) => {
-                        unimplemented!("[TODO?] No support for coercions yet")
-                    }
-
-                    BinaryType::Incompatible(lhs, rhs) => {
-                        panic!("TypeError: {:?} + {:?} is invalid", lhs, rhs)
-                    }
-                }
-            }
-
-            hir::Expression::Minus(plus) => {
-                let hir::BinaryExpression { lhs, rhs } = &**plus;
-                let ty = binary_op_type(lhs.ty, rhs.ty);
-
-                match ty {
-                    BinaryType::Same(ty) => {
-                        compile_expression(body, lhs, function);
-                        compile_expression(body, rhs, function);
-                        body.push(math_op(MathOperator::Sub, ty));
+                        body.push(math_op(*operator, ty));
                     }
 
                     BinaryType::CoerceLeft(_) | BinaryType::CoerceRight(_) => {
@@ -136,10 +125,12 @@ fn parameter_type(input: &Type) -> elements::ValueType {
 
 fn wasm_type(input: &Type) -> Option<elements::ValueType> {
     match input {
-        Type::F32 => Some(elements::ValueType::F32),
-        Type::F64 => Some(elements::ValueType::F64),
-        Type::I32 => Some(elements::ValueType::I32),
-        Type::I64 => Some(elements::ValueType::I64),
+        Type::Math(ty) => match ty {
+            MathType::F32 => Some(elements::ValueType::F32),
+            MathType::F64 => Some(elements::ValueType::F64),
+            MathType::U32 | MathType::I32 => Some(elements::ValueType::I32),
+            MathType::U64 | MathType::I64 => Some(elements::ValueType::I64),
+        },
         Type::Void => None,
     }
 }

@@ -1,10 +1,15 @@
 #![allow(rust_2018_idioms)]
 
+use crate::ast;
 use crate::ast::*;
 use crate::ir::*;
+use crate::MathOperator;
 use std::str::FromStr;
 
 grammar;
+
+Spanned<Rule>: Spanned<Rule> =
+    <l:@L> <rule:Rule> <r:@R> => rule.spanned(l, r);
 
 pub Module: Module<'input> = {
     (<ModifiedFunction*>) => Module::new(<>)
@@ -30,10 +35,12 @@ Parameter: Parameter<'input> = {
 }
 
 Type: Type = {
-    "i32" => Type::I32,
-    "i64" => Type::I64,
-    "f32" => Type::F32,
-    "f64" => Type::F64,
+    "i32" => Type::i32(),
+    "i64" => Type::i64(),
+    "u32" => Type::u32(),
+    "u64" => Type::u64(),
+    "f32" => Type::f32(),
+    "f64" => Type::f64(),
 }
 
 Block: Block<'input> = {
@@ -41,27 +48,27 @@ Block: Block<'input> = {
 }
 
 Expression: Expression<'input> = {
-    <PlusExpression>,
-    <MinusExpression>,
-    <PlusMinusLeft>,
+    <Expression3>
 }
 
-VariableExpression: Expression<'input> = {
+Expression1: Expression<'input> = {
     <Identifier> => Expression::VariableAccess(<>),
-}
-
-PlusMinusLeft: Expression<'input> = {
-    <VariableExpression>,
     <I32>
 }
 
-PlusExpression: Expression<'input> = {
-    <lhs:PlusMinusLeft> "+" <rhs:Expression> => Expression::Plus(BinaryExpression::new(Box::new(lhs), Box::new(rhs)))
+Expression2: Expression<'input> = {
+    <Expression1>,
+    <lhs:Expression2> "*" <rhs:Expression1> => Expression::Binary(MathOperator::Mul, Box::new(BinaryExpression::new(lhs, rhs))),
+    <lhs:Expression2> "/" <rhs:Expression1> => Expression::Binary(MathOperator::Div, Box::new(BinaryExpression::new(lhs, rhs)))
 }
 
-MinusExpression: Expression<'input> = {
-    <lhs:PlusMinusLeft> "-" <rhs:Expression> => Expression::Minus(BinaryExpression::new(Box::new(lhs), Box::new(rhs)))
+Expression3: Expression<'input> = {
+    <Expression2>,
+    <lhs:Expression3> "+" <rhs:Expression2> => Expression::Binary(MathOperator::Add, Box::new(BinaryExpression::new(lhs, rhs))),
+    <lhs:Expression3> "-" <rhs:Expression2> => Expression::Binary(MathOperator::Sub, Box::new(BinaryExpression::new(lhs, rhs)))
 }
 
-Identifier: Identifier<'input> = <r"[a-zA-Z][a-zA-Z0-9]*"> => Identifier::new(<>);
-I32: Expression<'input> = <r"[0-9]+"> => Expression::Const(ConstExpression::I32(FromStr::from_str(<>).unwrap()));
+Identifier: Identifier<'input> = <id: Spanned<RawIdentifier>> => id;
+RawIdentifier: RawIdentifier<'input> = <id: r"[a-zA-Z][a-zA-Z0-9]*"> => ident(id);
+
+I32: Expression<'input> = <r"[0-9]+"> => Expression::Const(ast::ConstExpression::Integer(FromStr::from_str(<>).unwrap()));

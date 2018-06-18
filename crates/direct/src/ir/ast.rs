@@ -1,13 +1,21 @@
-use crate::ir::{ConstExpression, FunctionModifiers, Type};
+use crate::compile::math::MathOperator;
+use crate::ir::{FunctionModifiers, Spanned, Type};
+use crate::pos::SpannedItem;
 use std::collections::HashMap;
 use std::fmt;
 
 #[derive(PartialEq, Clone, new)]
-pub struct Identifier<'input> {
+pub struct RawIdentifier<'input> {
     pub name: &'input str,
 }
 
-impl fmt::Debug for Identifier<'input> {
+pub type Identifier<'input> = Spanned<RawIdentifier<'input>>;
+
+pub fn ident<'input>(name: &'input str) -> RawIdentifier<'input> {
+    RawIdentifier::new(name)
+}
+
+impl fmt::Debug for RawIdentifier<'input> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", self.name)
     }
@@ -141,12 +149,25 @@ impl Block<'input> {
 }
 
 #[derive(PartialEq, Clone)]
+pub enum ConstExpression {
+    Integer(i64),
+    Float(f64),
+}
+
+impl fmt::Debug for ConstExpression {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            ConstExpression::Integer(int) => write!(f, "{:?}", *int),
+            ConstExpression::Float(float) => write!(f, "{:?}", *float),
+        }
+    }
+}
+
+#[derive(PartialEq, Clone)]
 pub enum Expression<'input> {
     Const(ConstExpression),
-
     VariableAccess(Identifier<'input>),
-    Plus(BinaryExpression<'input>),
-    Minus(BinaryExpression<'input>),
+    Binary(MathOperator, Box<BinaryExpression<'input>>),
 }
 
 impl fmt::Debug for Expression<'input> {
@@ -154,8 +175,9 @@ impl fmt::Debug for Expression<'input> {
         let value: &dyn fmt::Debug = match self {
             Expression::Const(constant) => constant,
             Expression::VariableAccess(id) => id,
-            Expression::Plus(plus) => plus,
-            Expression::Minus(minus) => minus,
+            Expression::Binary(op, box BinaryExpression { lhs, rhs }) => {
+                return write!(f, "{:?} {:?} {:?}", lhs, op, rhs);
+            }
         };
 
         write!(f, "{:?}", value)
@@ -164,8 +186,8 @@ impl fmt::Debug for Expression<'input> {
 
 #[derive(PartialEq, Clone, new)]
 pub struct BinaryExpression<'input> {
-    pub lhs: Box<Expression<'input>>,
-    pub rhs: Box<Expression<'input>>,
+    pub lhs: Expression<'input>,
+    pub rhs: Expression<'input>,
 }
 
 impl fmt::Debug for BinaryExpression<'input> {

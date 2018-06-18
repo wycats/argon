@@ -1,5 +1,6 @@
-use crate::ast;
 use crate::ir::shared::{ConstExpression, Type};
+use crate::pos::SpannedItem;
+use crate::{ast, MathOperator};
 
 #[derive(Debug)]
 pub struct AstBuilder {
@@ -81,8 +82,9 @@ impl FunctionBuilder<'module> {
     }
 
     pub fn param(&mut self, name: &'static str, ty: Type) {
-        let name = ast::Identifier::new(name);
-        self.parameters.push(ast::Parameter::new(name, ty.into()));
+        let name = ast::ident(name);
+        self.parameters
+            .push(ast::Parameter::new(name.synthetic("builder"), ty.into()));
     }
 
     pub fn returning(&mut self, ty: Type) {
@@ -105,7 +107,7 @@ impl FunctionBuilder<'module> {
         } = self;
 
         let mut function = ast::Function::new(
-            ast::Identifier::new(name),
+            ast::ident(name).synthetic("builder"),
             ast::Parameters::new(parameters),
             ret.unwrap_or(Type::Void),
             ast::Block::new(expressions),
@@ -124,11 +126,11 @@ pub struct ExpressionBuilder;
 
 impl ExpressionBuilder {
     pub fn variable(self, name: &'static str) -> ast::Expression<'static> {
-        ast::Expression::VariableAccess(ast::Identifier::new(name))
+        ast::Expression::VariableAccess(ast::ident(name).synthetic("builder"))
     }
 
     pub fn i32(self, integer: i32) -> ast::Expression<'static> {
-        ast::Expression::Const(ConstExpression::I32(integer))
+        ast::Expression::Const(ast::ConstExpression::Integer(integer as i64))
     }
 }
 
@@ -136,6 +138,9 @@ impl std::ops::Add for ast::Expression<'static> {
     type Output = ast::Expression<'static>;
 
     fn add(self, rhs: ast::Expression<'static>) -> ast::Expression<'static> {
-        ast::Expression::Plus(ast::BinaryExpression::new(Box::new(self), Box::new(rhs)))
+        ast::Expression::Binary(
+            MathOperator::Add,
+            Box::new(ast::BinaryExpression::new(self, rhs)),
+        )
     }
 }
