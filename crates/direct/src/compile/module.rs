@@ -1,7 +1,8 @@
-use crate::ast;
 use crate::compile::math::{binary_op_type, math_op, BinaryType};
-use crate::ir::{hir, ConstExpression, Type, TypeError};
+use crate::ir::CompileError;
+use crate::ir::{hir, ConstExpression, Type};
 use crate::MathType;
+use crate::{ast, resolved};
 use parity_wasm::{builder, elements};
 
 struct CodeLocation {
@@ -11,8 +12,9 @@ struct CodeLocation {
     _body: u32,
 }
 
-pub fn compile_module(input: &ast::Module) -> Result<elements::Module, TypeError> {
-    let typed = input.ast_to_hir()?;
+pub fn compile_module(input: &ast::Module) -> Result<elements::Module, CompileError> {
+    let r = resolved::resolve_module_names(input)?;
+    let typed = r.ast_to_hir()?;
 
     let mut module = builder::module();
 
@@ -24,7 +26,7 @@ pub fn compile_module(input: &ast::Module) -> Result<elements::Module, TypeError
         if func.modifiers.export {
             module = module
                 .export()
-                .field(func.name)
+                .field(func.name.node)
                 .internal()
                 .func(location.signature)
                 .build();
@@ -74,7 +76,7 @@ fn compile_expression(
     function: &hir::TypedFunction,
 ) {
     match input {
-        hir::TypedExpression { ty, expression } => match expression {
+        hir::TypedExpression { ty: _, expression } => match expression {
             hir::Expression::Const(constant) => match constant {
                 ConstExpression::I32(int) => body.push(elements::Opcode::I32Const(*int)),
                 ConstExpression::I64(int) => body.push(elements::Opcode::I64Const(*int)),

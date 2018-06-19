@@ -2,7 +2,7 @@ use crate::ir::Type;
 use parity_wasm::elements::{self, Opcode};
 use std::fmt;
 
-#[derive(Copy, Clone, Eq, PartialEq)]
+#[derive(Copy, Clone, Eq, PartialEq, Hash)]
 pub enum MathType {
     I32,
     I64,

@@ -1,9 +1,30 @@
 use crate::compile::math::{MathOperator, MathType};
+use crate::ir::resolved::ResolveError;
+use nan_preserving_float::{F32, F64};
+use std::convert::From;
 use std::fmt;
+
+#[derive(Debug)]
+pub enum CompileError {
+    ResolveError(ResolveError),
+    TypeError(TypeError),
+}
 
 #[derive(Debug)]
 pub enum TypeError {
     MismatchedBinary(MathOperator, Type, Type),
+}
+
+impl From<ResolveError> for CompileError {
+    fn from(error: ResolveError) -> CompileError {
+        CompileError::ResolveError(error)
+    }
+}
+
+impl From<TypeError> for CompileError {
+    fn from(error: TypeError) -> CompileError {
+        CompileError::TypeError(error)
+    }
 }
 
 #[derive(PartialEq, Copy, Clone)]
@@ -12,8 +33,8 @@ pub enum ConstExpression {
     I64(i64),
     U32(u32),
     U64(u64),
-    F32(f32),
-    F64(f64),
+    F32(F32),
+    F64(F64),
 }
 
 impl fmt::Debug for ConstExpression {
@@ -29,7 +50,7 @@ impl fmt::Debug for ConstExpression {
     }
 }
 
-#[derive(Eq, PartialEq, Copy, Clone)]
+#[derive(Eq, PartialEq, Copy, Clone, Hash)]
 pub enum Type {
     Math(MathType),
     Void,

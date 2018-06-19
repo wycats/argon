@@ -1,4 +1,4 @@
-use crate::ir::shared::{ConstExpression, Type};
+use crate::ir::shared::Type;
 use crate::pos::SpannedItem;
 use crate::{ast, MathOperator};
 

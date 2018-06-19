@@ -1,5 +1,4 @@
 use std::fmt::{self, Debug};
-use std::ops::Deref;
 
 #[derive(Copy, Clone, Eq, PartialEq)]
 pub struct Id(u32);
@@ -28,8 +27,8 @@ pub struct ByteSpan {
 
 #[derive(Eq, PartialEq, Clone)]
 pub struct Spanned<Node: PartialEq + Debug> {
-    node: Node,
-    span: Span,
+    crate node: Node,
+    crate span: Span,
 }
 
 impl<Node: PartialEq + Debug> fmt::Debug for Spanned<Node> {
@@ -39,14 +38,6 @@ impl<Node: PartialEq + Debug> fmt::Debug for Spanned<Node> {
         } else {
             write!(f, "{:?}", self.node)
         }
-    }
-}
-
-impl<Node: PartialEq + Debug> Deref for Spanned<Node> {
-    type Target = Node;
-
-    fn deref(&self) -> &Node {
-        &self.node
     }
 }
 

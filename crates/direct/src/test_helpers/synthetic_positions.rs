@@ -1,3 +1,5 @@
+#![allow(unused)]
+
 use crate::ast;
 
 pub fn synthesize_source(module: ast::Module<'static>) -> (ast::Module<'static>, String) {

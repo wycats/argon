@@ -1,6 +1,6 @@
 use crate::compile::math::MathOperator;
 use crate::ir::{FunctionModifiers, Spanned, Type};
-use crate::pos::SpannedItem;
+use nan_preserving_float::F64;
 use std::collections::HashMap;
 use std::fmt;
 
@@ -10,6 +10,15 @@ pub struct RawIdentifier<'input> {
 }
 
 pub type Identifier<'input> = Spanned<RawIdentifier<'input>>;
+
+impl Spanned<RawIdentifier<'input>> {
+    crate fn as_ref(&self) -> Spanned<&'input str> {
+        Spanned {
+            node: self.node.name,
+            span: self.span,
+        }
+    }
+}
 
 pub fn ident<'input>(name: &'input str) -> RawIdentifier<'input> {
     RawIdentifier::new(name)
@@ -39,8 +48,8 @@ pub struct Parameters<'input> {
 }
 
 impl Parameters<'input> {
-    crate fn iter(&self) -> impl Iterator<Item = (&str, &Type)> {
-        self.args.iter().map(|arg| (arg.name.name, &arg.ty))
+    crate fn iter(&self) -> impl Iterator<Item = (Spanned<&str>, &Type)> {
+        self.args.iter().map(|arg| (arg.name.as_ref(), &arg.ty))
     }
 }
 
@@ -108,7 +117,7 @@ fn function_mappings(args: &Parameters<'input>) -> HashMap<String, u32> {
     let mut map = HashMap::new();
 
     for (i, (name, _)) in args.iter().enumerate() {
-        map.insert(name.to_string(), i as u32);
+        map.insert(name.node.to_string(), i as u32);
     }
 
     map
@@ -142,16 +151,10 @@ impl fmt::Debug for Block<'input> {
     }
 }
 
-impl Block<'input> {
-    crate fn iter(&self) -> impl Iterator<Item = &Expression<'_>> {
-        self.expressions.iter()
-    }
-}
-
-#[derive(PartialEq, Clone)]
+#[derive(PartialEq, Copy, Clone)]
 pub enum ConstExpression {
     Integer(i64),
-    Float(f64),
+    Float(F64),
 }
 
 impl fmt::Debug for ConstExpression {
