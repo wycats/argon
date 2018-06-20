@@ -1,6 +1,6 @@
+pub mod annotated;
 pub mod ast;
 pub mod hir;
-pub mod infer;
 pub mod pos;
 pub mod resolved;
 crate mod shared;

@@ -1,6 +1,5 @@
 use crate::compile::math::{binary_op_type, math_op, BinaryType};
-use crate::ir::CompileError;
-use crate::ir::{hir, ConstExpression, Type};
+use crate::ir::{annotated, hir, CompileError, ConstExpression, Type};
 use crate::MathType;
 use crate::{ast, resolved};
 use parity_wasm::{builder, elements};
@@ -13,18 +12,20 @@ struct CodeLocation {
 }
 
 pub fn compile_module(input: &ast::Module) -> Result<elements::Module, CompileError> {
-    let r = resolved::resolve_module_names(input)?;
-    let typed = r.ast_to_hir()?;
+    let module = resolved::resolve_module_names(input)?;
+    // let module = annotated::Module::from(module);
+    let typed = module.ast_to_hir()?;
 
-    let mut module = builder::module();
+    let mut builder = builder::module();
 
     for func in &typed.funcs {
         let function = builder::function();
         let function = compile_function(function, func);
-        let location: CodeLocation = unsafe { std::mem::transmute(module.push_function(function)) };
+        let location: CodeLocation =
+            unsafe { std::mem::transmute(builder.push_function(function)) };
 
         if func.modifiers.export {
-            module = module
+            builder = builder
                 .export()
                 .field(func.name.node)
                 .internal()
@@ -33,7 +34,7 @@ pub fn compile_module(input: &ast::Module) -> Result<elements::Module, CompileEr
         }
     }
 
-    Ok(module.build())
+    Ok(builder.build())
 }
 
 fn compile_function(

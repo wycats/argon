@@ -44,37 +44,37 @@ impl fmt::Debug for Parameter<'input> {
 
 #[derive(PartialEq, Clone)]
 pub struct Parameters<'input> {
-    pub args: Vec<Parameter<'input>>,
+    pub list: Vec<Parameter<'input>>,
 }
 
 impl Parameters<'input> {
     crate fn iter(&self) -> impl Iterator<Item = (Spanned<&str>, &Type)> {
-        self.args.iter().map(|arg| (arg.name.as_ref(), &arg.ty))
+        self.list.iter().map(|arg| (arg.name.as_ref(), &arg.ty))
     }
 }
 
 impl fmt::Debug for Parameters<'input> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.debug_list().entries(self.args.iter()).finish()
+        f.debug_list().entries(self.list.iter()).finish()
     }
 }
 
 impl Parameters<'input> {
-    pub fn new(args: Vec<Parameter<'input>>) -> Parameters<'input> {
-        Parameters { args }
+    pub fn new(list: Vec<Parameter<'input>>) -> Parameters<'input> {
+        Parameters { list }
     }
 
     crate fn empty() -> Parameters<'input> {
-        Parameters { args: vec![] }
+        Parameters { list: vec![] }
     }
 
     crate fn from_parser(
         arg: Parameter<'input>,
         rest: Vec<Parameter<'input>>,
     ) -> Parameters<'input> {
-        let mut args = vec![arg];
-        args.extend(rest);
-        Parameters { args }
+        let mut list = vec![arg];
+        list.extend(rest);
+        Parameters { list }
     }
 }
 

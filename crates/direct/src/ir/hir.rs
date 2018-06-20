@@ -155,7 +155,7 @@ impl resolved::Expression {
                 TypedExpression::new(expr, ty)
             }
 
-            resolved::Expression::Binary(operator, box resolved::BinaryExpression { lhs, rhs }) => {
+            resolved::Expression::Binary { operator, lhs, rhs } => {
                 typed_binary(*operator, lhs, rhs, params)?
             }
         };

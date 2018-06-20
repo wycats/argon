@@ -1,22 +1,21 @@
 extern crate parity_wasm;
-extern crate wabt;
 extern crate wasmi;
 
 fn main() {
-    let wasm_binary: Vec<u8> = wabt::wat2wasm(
-        r#"
-            (module
-            (func $id (param $lhs i32) (result i32)
-                get_local $lhs)
-            (export "id" (func $id))
-            )
-	   "#,
-    ).expect("failed to parse wat");
+    // let wasm_binary: Vec<u8> = wabt::wat2wasm(
+    //     r#"
+    //         (module
+    //         (func $id (param $lhs i32) (result i32)
+    //             get_local $lhs)
+    //         (export "id" (func $id))
+    //         )
+	//    "#,
+    // ).expect("failed to parse wat");
 
-    let module: parity_wasm::elements::Module =
-        parity_wasm::deserialize_buffer(&wasm_binary).expect("failed to load wasm");
+    // let module: parity_wasm::elements::Module =
+    //     parity_wasm::deserialize_buffer(&wasm_binary).expect("failed to load wasm");
 
-    println!("{:#?}", module);
+    // println!("{:#?}", module);
 }
 
 /*

@@ -8,6 +8,5 @@ version = "1.0.0"
 members = ["crates/direct", "crates/tests"]
 
 [dev-dependencies]
-wabt = "0.3.0"
 wasmi = "0.2.0"
 parity-wasm = "0.27.0"

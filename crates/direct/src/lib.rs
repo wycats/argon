@@ -1,5 +1,6 @@
 #![feature(crate_visibility_modifier)]
 #![feature(box_patterns)]
+#![feature(box_syntax)]
 #![deny(rust_2018_idioms)]
 #![allow(unused_extern_crates)]
 
@@ -10,6 +11,7 @@ extern crate derive_new;
 extern crate lalrpop_util;
 
 pub mod compile;
+crate mod infer;
 pub mod ir;
 pub mod parser;
 

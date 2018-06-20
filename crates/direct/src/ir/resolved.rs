@@ -21,16 +21,14 @@ pub struct Block {
 }
 
 #[derive(Debug)]
-pub struct BinaryExpression {
-    pub lhs: Expression,
-    pub rhs: Expression,
-}
-
-#[derive(Debug)]
 pub enum Expression {
     Const(ast::ConstExpression),
     VariableAccess(u32),
-    Binary(MathOperator, Box<BinaryExpression>),
+    Binary {
+        operator: MathOperator,
+        lhs: Box<Expression>,
+        rhs: Box<Expression>,
+    },
 }
 
 crate fn resolve_module_names(
@@ -112,7 +110,11 @@ impl ResolveFunction<'module> {
                 let lhs = self.resolve_expression(lhs)?;
                 let rhs = self.resolve_expression(rhs)?;
 
-                Expression::Binary(*operator, Box::new(BinaryExpression { lhs, rhs }))
+                Expression::Binary {
+                    operator: *operator,
+                    lhs: box lhs,
+                    rhs: box rhs,
+                }
             }
         };
 
