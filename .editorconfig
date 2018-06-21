@@ -1,3 +1,7 @@
+[*]
+
+end_of_line = lf
+
 ["*.rs", "*.lalrpop"]
 
 tab_width = 4

@@ -7,7 +7,7 @@ crate struct TypeVar {
 }
 
 impl TypeVar {
-    fn new(var: usize) -> TypeVar {
+    crate fn new(var: usize) -> TypeVar {
         TypeVar { var }
     }
 }
@@ -54,7 +54,12 @@ impl InferType {
         InferType::Function(params, ret)
     }
 
-    crate fn fresh_function(params: Vec<InferType>, ret: InferType) -> InferType {
+    #[cfg(test)]
+    crate fn var(var: usize) -> InferType {
+        InferType::Variable(TypeVar { var })
+    }
+
+    crate fn variable_function(params: Vec<InferType>, ret: InferType) -> InferType {
         InferType::VariableFunction(params, box ret)
     }
 

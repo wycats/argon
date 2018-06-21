@@ -88,6 +88,20 @@ crate fn unify(constraints: Constraints) -> Result<Substitution, CompileError> {
 fn unify_one(constraint: Constraint) -> Result<Substitution, CompileError> {
     match (constraint.left, constraint.right) {
         (InferType::Resolved(left), InferType::Resolved(right)) => unify_resolved(left, right),
+        (
+            InferType::VariableFunction(lparams, box lret),
+            InferType::VariableFunction(rparams, box rret),
+        ) => {
+            let mut constraints = Constraints::empty();
+
+            for (left, right) in lparams.into_iter().zip(rparams) {
+                constraints += Constraint(left, right);
+            }
+
+            constraints += Constraint(lret, rret);
+
+            unify(constraints)
+        }
         (InferType::Variable(type_var), ty) => unify_var(type_var, &ty),
         (ty, InferType::Variable(type_var)) => unify_var(type_var, &ty),
         _ => return Err(CompileError::Unimplemented),
@@ -159,12 +173,72 @@ fn occurs(type_var: TypeVar, ty: &InferType) -> bool {
 mod tests {
     use super::{unify, Substitution};
     use crate::infer::constraint::{Constraint, Constraints};
+    use crate::ir::annotated::{TypeVar, TypeVars};
     use crate::ir::InferType;
+    use std::collections::HashMap;
+
+    fn types() -> TypeVars {
+        TypeVars::new()
+    }
 
     #[test]
     fn unifies_two_ints() {
         let substitution = unify(Constraints(Constraint(InferType::i32(), InferType::i32())));
 
         assert_eq!(substitution, Ok(Substitution::empty()));
+    }
+
+    #[test]
+    fn unifies_two_bools() {
+        let substitution = unify(Constraints(Constraint(
+            InferType::bool(),
+            InferType::bool(),
+        )));
+
+        assert_eq!(substitution, Ok(Substitution::empty()));
+    }
+
+    #[test]
+    fn unifies_two_functions() {
+        let substitution = unify(Constraints(Constraint(
+            InferType::variable_function(vec![InferType::bool()], InferType::bool()),
+            InferType::variable_function(vec![InferType::bool()], InferType::bool()),
+        )));
+
+        assert_eq!(substitution, Ok(Substitution::empty()));
+    }
+
+    #[test]
+    fn unifies_two_variables() {
+        let x = InferType::var(1);
+        let y = InferType::var(2);
+
+        let substitution = unify(Constraints(Constraint(x.clone(), y.clone())));
+        let expected = Substitution::from_pair(TypeVar::new(1), InferType::var(2));
+
+        assert_eq!(substitution, Ok(expected));
+    }
+
+    #[test]
+    fn unifies_variables_with_non_variables() {
+        let substitution = unify(Constraints(Constraint(InferType::var(1), InferType::i32())));
+        let expected = Substitution::from_pair(TypeVar::new(1), InferType::i32());
+
+        assert_eq!(substitution, Ok(expected));
+    }
+
+    #[test]
+    fn unifies_variables_in_functions() {
+        let substitution = unify(Constraints(Constraint(
+            InferType::variable_function(vec![InferType::var(1)], InferType::bool()),
+            InferType::variable_function(vec![InferType::i32()], InferType::var(2)),
+        )));
+
+        let mut expected = HashMap::new();
+        expected.insert(TypeVar::new(1), InferType::i32());
+        expected.insert(TypeVar::new(2), InferType::bool());
+        let expected = Substitution::new(expected);
+
+        assert_eq!(substitution, Ok(expected));
     }
 }

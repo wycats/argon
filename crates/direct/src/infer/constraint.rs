@@ -61,7 +61,7 @@ impl Collect for Annotated<annotated::Expression> {
                 function.collect() + arg_constraints
                     + Constraints(Constraint(
                         function.ty.clone(),
-                        InferType::fresh_function(args, ty.clone()),
+                        InferType::variable_function(args, ty.clone()),
                     ))
             }
             annotated::Expression::Const(constant) => match constant {
@@ -150,7 +150,7 @@ mod tests {
         let expected = Constraints::empty()
             + Constraint(
                 t2.clone(),
-                Type::fresh_function(vec![t3.clone()], t1.clone()),
+                Type::variable_function(vec![t3.clone()], t1.clone()),
             );
 
         assert_eq!(application.collect(), expected);
