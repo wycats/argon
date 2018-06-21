@@ -149,7 +149,7 @@ impl resolved::Expression {
             },
 
             resolved::Expression::VariableAccess(id) => {
-                let ty = params[*id as usize];
+                let ty = params[*id as usize].clone();
                 let expr = Expression::VariableAccess(*id);
 
                 TypedExpression::new(expr, ty)
@@ -171,14 +171,17 @@ fn typed_binary(
     params: &[Type],
 ) -> Result<TypedExpression, TypeError> {
     let lhs = lhs.ast_to_hir(None, params)?;
-    let rhs = rhs.ast_to_hir(Some(lhs.ty), params)?;
+    let rhs = rhs.ast_to_hir(Some(lhs.ty.clone()), params)?;
 
-    if lhs.ty == rhs.ty {
-        let ty = lhs.ty;
+    let lty = lhs.ty.clone();
+    let rty = rhs.ty.clone();
+
+    if lty == rty {
+        let ty = lty.clone();
         let expr = Expression::Binary(operator, Box::new(BinaryExpression { lhs, rhs }));
 
         Ok(TypedExpression::new(expr, ty))
     } else {
-        return Err(TypeError::MismatchedBinary(operator, lhs.ty, rhs.ty));
+        return Err(TypeError::MismatchedBinary(operator, lty, rty));
     }
 }

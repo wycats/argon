@@ -100,7 +100,7 @@ fn compile_expression(
             }
 
             hir::Expression::Binary(operator, box hir::BinaryExpression { lhs, rhs }) => {
-                let ty = binary_op_type(lhs.ty, rhs.ty);
+                let ty = binary_op_type(lhs.ty.clone(), rhs.ty.clone());
 
                 match ty {
                     BinaryType::Same(ty) => {
@@ -134,6 +134,10 @@ fn wasm_type(input: &Type) -> Option<elements::ValueType> {
             MathType::U32 | MathType::I32 => Some(elements::ValueType::I32),
             MathType::U64 | MathType::I64 => Some(elements::ValueType::I64),
         },
+        Type::Bool => Some(elements::ValueType::I32),
+        Type::Function(..) | Type::Apply(..) => {
+            panic!("Cannot convert a function into a wasm type")
+        }
         Type::Void => None,
     }
 }

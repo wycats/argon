@@ -29,7 +29,7 @@ impl fmt::Debug for MathType {
     }
 }
 
-#[derive(Copy, Clone, Eq, PartialEq)]
+#[derive(Debug)]
 crate enum BinaryType {
     CoerceLeft(MathType),
     CoerceRight(MathType),

@@ -1,16 +1,18 @@
 use crate::compile::math::{MathOperator, MathType};
 use crate::ir::resolved::ResolveError;
+use itertools::Itertools;
 use nan_preserving_float::{F32, F64};
 use std::convert::From;
 use std::fmt;
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq)]
 pub enum CompileError {
     ResolveError(ResolveError),
     TypeError(TypeError),
+    Unimplemented,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq)]
 pub enum TypeError {
     MismatchedBinary(MathOperator, Type, Type),
 }
@@ -50,13 +52,34 @@ impl fmt::Debug for ConstExpression {
     }
 }
 
-#[derive(Eq, PartialEq, Copy, Clone, Hash)]
+#[derive(PartialEq, Eq, Clone, Hash)]
 pub enum Type {
     Math(MathType),
+    Bool,
+    Function(Box<FunctionType>),
+    Apply(Box<FunctionType>, Vec<Type>),
     Void,
 }
 
+#[derive(Debug, PartialEq, Eq, Clone, Hash)]
+pub struct FunctionType {
+    pub params: Vec<Type>,
+    pub ret: Type,
+}
+
+pub fn FunctionType(params: Vec<Type>, ret: Type) -> FunctionType {
+    FunctionType { params, ret }
+}
+
 impl Type {
+    pub fn function(params: Vec<Type>, ret: Type) -> Type {
+        Type::Function(box FunctionType { params, ret })
+    }
+
+    pub fn bool() -> Type {
+        Type::Bool
+    }
+
     pub fn i32() -> Type {
         Type::Math(MathType::I32)
     }
@@ -86,6 +109,19 @@ impl fmt::Debug for Type {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Type::Math(ty) => write!(f, "{:?}", ty),
+            Type::Function(box FunctionType { params, ret }) => write!(
+                f,
+                "({}) -> {:?}",
+                params.iter().map(|p| format!("{:?}", p)).join(", "),
+                ret
+            ),
+            Type::Bool => write!(f, "boolean"),
+            Type::Apply(box function, params) => write!(
+                f,
+                "(apply fn {:?} with {})",
+                Type::Function(box function.clone()),
+                params.iter().map(|p| format!("{:?}", p)).join(", ")
+            ),
             Type::Void => write!(f, "void"),
         }
     }

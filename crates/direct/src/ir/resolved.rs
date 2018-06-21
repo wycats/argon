@@ -66,7 +66,7 @@ struct ResolveFunction<'module> {
     func: &'module ast::Function<'module>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq)]
 pub enum ResolveError {}
 
 impl ResolveFunction<'module> {
@@ -78,10 +78,10 @@ impl ResolveFunction<'module> {
 
         for (name, ty) in func.args.iter() {
             symbols.push(name);
-            params.push(*ty);
+            params.push(ty.clone());
         }
 
-        let ret = func.ret;
+        let ret = func.ret.clone();
 
         let mut expressions = vec![];
 

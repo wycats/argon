@@ -1,34 +1,93 @@
 use super::resolved;
-use crate::{ast, FunctionModifiers, MathOperator, Spanned, Type};
+use crate::{ast, FunctionModifiers, FunctionType, MathOperator, Spanned, Type};
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+crate struct TypeVar {
+    var: usize,
+}
+
+impl TypeVar {
+    fn new(var: usize) -> TypeVar {
+        TypeVar { var }
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+crate struct TypeVars {
+    current: usize,
+}
+
+impl TypeVars {
+    crate fn new() -> TypeVars {
+        TypeVars { current: 0 }
+    }
+
+    crate fn fresh(&mut self) -> InferType {
+        let current = self.current;
+        self.current += 1;
+
+        InferType::Variable(TypeVar::new(current))
+    }
+
+    crate fn annotate_fresh<T>(&mut self, item: T) -> Annotated<T> {
+        Annotated {
+            ty: self.fresh(),
+            item,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 crate enum InferType {
     Resolved(Type),
-    Fresh,
+    Function(Vec<Type>, Type),
+    VariableFunction(Vec<InferType>, Box<InferType>),
+    Variable(TypeVar),
 }
 
 impl InferType {
     crate fn annotate<T>(self, item: T) -> Annotated<T> {
         Annotated { ty: self, item }
     }
+
+    crate fn function(params: Vec<Type>, ret: Type) -> InferType {
+        InferType::Function(params, ret)
+    }
+
+    crate fn fresh_function(params: Vec<InferType>, ret: InferType) -> InferType {
+        InferType::VariableFunction(params, box ret)
+    }
+
+    crate fn i32() -> InferType {
+        InferType::Resolved(Type::i32())
+    }
+
+    crate fn f32() -> InferType {
+        InferType::Resolved(Type::f32())
+    }
+
+    crate fn bool() -> InferType {
+        InferType::Resolved(Type::bool())
+    }
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 crate struct Annotated<T> {
-    ty: InferType,
-    item: T,
+    crate ty: InferType,
+    crate item: T,
+}
+
+impl<T> std::ops::Deref for Annotated<T> {
+    type Target = T;
+
+    fn deref(&self) -> &T {
+        &self.item
+    }
 }
 
 impl<T> Annotated<T> {
     crate fn new(ty: InferType, item: T) -> Annotated<T> {
         Annotated { ty, item }
-    }
-
-    fn fresh(item: T) -> Annotated<T> {
-        Annotated {
-            ty: InferType::Fresh,
-            item,
-        }
     }
 }
 
@@ -38,8 +97,14 @@ crate struct Module<'input> {
 }
 
 impl Module<'input> {
-    crate fn from(resolved::Module { funcs }: resolved::Module<'input>) -> Module<'input> {
-        let funcs = funcs.into_iter().map(Function::from).collect();
+    crate fn from(
+        resolved::Module { funcs }: resolved::Module<'input>,
+        vars: &mut TypeVars,
+    ) -> Module<'input> {
+        let funcs = funcs
+            .into_iter()
+            .map(|func| Function::from(func, vars))
+            .collect();
 
         Module { funcs }
     }
@@ -65,8 +130,9 @@ impl Function<'input> {
             body,
             modifiers,
         }: resolved::Function<'input>,
+        vars: &mut TypeVars,
     ) -> Function<'input> {
-        let body = Block::from(body);
+        let body = Block::from(body, vars);
 
         Function {
             name,
@@ -85,14 +151,14 @@ crate struct Block {
 }
 
 impl Block {
-    crate fn from(block: resolved::Block) -> Annotated<Block> {
+    crate fn from(block: resolved::Block, vars: &mut TypeVars) -> Annotated<Block> {
         let expressions = block
             .expressions
             .into_iter()
-            .map(Expression::from)
+            .map(|e| Expression::from(e, vars))
             .collect();
 
-        Annotated::fresh(Block { expressions })
+        vars.annotate_fresh(Block { expressions })
     }
 }
 
@@ -100,6 +166,7 @@ impl Block {
 crate enum Expression {
     Const(ast::ConstExpression),
     VariableAccess(u32),
+    Apply(Box<Annotated<Expression>>, Vec<Annotated<Expression>>),
     Binary {
         operator: MathOperator,
         lhs: Box<Annotated<Expression>>,
@@ -108,21 +175,76 @@ crate enum Expression {
 }
 
 impl Expression {
-    crate fn from(expr: resolved::Expression) -> Annotated<Expression> {
+    #[cfg(test)]
+    crate fn i32(value: i32) -> Expression {
+        Expression::Const(ast::ConstExpression::Integer(value as i64))
+    }
+
+    #[cfg(test)]
+    crate fn bool(value: bool) -> Expression {
+        Expression::Const(ast::ConstExpression::Bool(value))
+    }
+
+    crate fn from(expr: resolved::Expression, vars: &mut TypeVars) -> Annotated<Expression> {
         match expr {
-            resolved::Expression::Const(expr) => Annotated::fresh(Expression::Const(expr)),
+            resolved::Expression::Const(expr) => vars.annotate_fresh(Expression::Const(expr)),
             resolved::Expression::VariableAccess(id) => {
-                Annotated::fresh(Expression::VariableAccess(id))
+                vars.annotate_fresh(Expression::VariableAccess(id))
             }
             resolved::Expression::Binary {
                 operator,
                 box lhs,
                 box rhs,
-            } => Annotated::fresh(Expression::Binary {
-                operator,
-                lhs: box Expression::from(lhs),
-                rhs: box Expression::from(rhs),
-            }),
+            } => {
+                let t1 = vars.fresh();
+                t1.annotate(Expression::Binary {
+                    operator,
+                    lhs: box Expression::from(lhs, vars),
+                    rhs: box Expression::from(rhs, vars),
+                })
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+impl Annotated<Expression> {
+    crate fn i32(ty: InferType, term: i32) -> Annotated<Expression> {
+        Annotated {
+            ty,
+            item: Expression::i32(term),
+        }
+    }
+
+    crate fn bool(ty: InferType, term: bool) -> Annotated<Expression> {
+        Annotated {
+            ty,
+            item: Expression::bool(term),
+        }
+    }
+
+    crate fn var(ty: InferType, term: u32) -> Annotated<Expression> {
+        Annotated {
+            ty,
+            item: Expression::VariableAccess(term),
+        }
+    }
+
+    crate fn function(ty: InferType, params: Vec<Type>, ret: Type) -> Annotated<FunctionType> {
+        Annotated {
+            ty,
+            item: FunctionType(params, ret),
+        }
+    }
+
+    crate fn apply(
+        ty: InferType,
+        func: Annotated<Expression>,
+        args: Vec<Annotated<Expression>>,
+    ) -> Annotated<Expression> {
+        Annotated {
+            ty,
+            item: Expression::Apply(box func, args),
         }
     }
 }

@@ -3,6 +3,7 @@
 #![feature(box_syntax)]
 #![deny(rust_2018_idioms)]
 #![allow(unused_extern_crates)]
+#![allow(warnings)]
 
 #[macro_use]
 extern crate derive_new;

@@ -155,6 +155,7 @@ impl fmt::Debug for Block<'input> {
 pub enum ConstExpression {
     Integer(i64),
     Float(F64),
+    Bool(bool),
 }
 
 impl fmt::Debug for ConstExpression {
@@ -162,6 +163,7 @@ impl fmt::Debug for ConstExpression {
         match self {
             ConstExpression::Integer(int) => write!(f, "{:?}", *int),
             ConstExpression::Float(float) => write!(f, "{:?}", *float),
+            ConstExpression::Bool(boolean) => write!(f, "{:?}", *boolean),
         }
     }
 }
