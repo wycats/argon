@@ -28,24 +28,48 @@ crate fn Constraint(left: InferType, right: InferType) -> Constraint {
     Constraint { left, right }
 }
 
-trait Collect {
-    fn collect(&self) -> Constraints;
+trait CollectConstraints {
+    fn constraints(&self) -> Constraints;
 }
 
-impl Collect for Vec<Annotated<annotated::Expression>> {
-    fn collect(&self) -> Constraints {
+impl CollectConstraints for annotated::Module<'input> {
+    fn constraints(&self) -> Constraints {
         let mut constraints = Constraints::empty();
 
-        for expression in self {
-            constraints += expression.collect();
+        for function in &self.funcs {
+            constraints += function.constraints();
         }
 
         constraints
     }
 }
 
-impl Collect for Annotated<annotated::Expression> {
-    fn collect(&self) -> Constraints {
+impl CollectConstraints for annotated::Function<'input> {
+    fn constraints(&self) -> Constraints {
+        self.body.constraints()
+    }
+}
+
+impl CollectConstraints for Annotated<annotated::Block> {
+    fn constraints(&self) -> Constraints {
+        self.item.expressions.constraints()
+    }
+}
+
+impl CollectConstraints for Vec<Annotated<annotated::Expression>> {
+    fn constraints(&self) -> Constraints {
+        let mut constraints = Constraints::empty();
+
+        for expression in self {
+            constraints += expression.constraints();
+        }
+
+        constraints
+    }
+}
+
+impl CollectConstraints for Annotated<annotated::Expression> {
+    fn constraints(&self) -> Constraints {
         let Annotated { ty, item } = self;
 
         match item {
@@ -53,12 +77,12 @@ impl Collect for Annotated<annotated::Expression> {
                 let mut arg_constraints = Constraints::empty();
 
                 for arg in args {
-                    arg_constraints += arg.collect();
+                    arg_constraints += arg.constraints();
                 }
 
                 let args = args.iter().map(|a| a.ty.clone()).collect();
 
-                function.collect() + arg_constraints
+                function.constraints() + arg_constraints
                     + Constraints(Constraint(
                         function.ty.clone(),
                         InferType::variable_function(args, ty.clone()),
@@ -83,8 +107,8 @@ impl Collect for Annotated<annotated::Expression> {
                 lhs: box lhs,
                 rhs: box rhs,
             } => {
-                lhs.collect()
-                    + rhs.collect()
+                lhs.constraints()
+                    + rhs.constraints()
                     + Constraints(Constraint(ty.clone(), lhs.ty.clone()))
                     + Constraints(Constraint(ty.clone(), rhs.ty.clone()))
             }
@@ -94,8 +118,7 @@ impl Collect for Annotated<annotated::Expression> {
 
 #[cfg(test)]
 mod tests {
-    use super::Collect;
-    use super::{Constraint, Constraints};
+    use super::{CollectConstraints, Constraint, Constraints};
     use crate::ir::annotated::{Annotated, Expression, TypeVars};
     use crate::ir::InferType as Type;
 
@@ -112,7 +135,7 @@ mod tests {
         let t1 = types.fresh();
         let term = Term::i32(t1.clone(), 1);
 
-        assert_eq!(term.collect(), Constraints(Constraint(t1, Type::i32())))
+        assert_eq!(term.constraints(), Constraints(Constraint(t1, Type::i32())))
     }
 
     #[test]
@@ -122,7 +145,10 @@ mod tests {
         let t1 = types.fresh();
         let term = Term::bool(t1.clone(), true);
 
-        assert_eq!(term.collect(), Constraints(Constraint(t1, Type::bool())))
+        assert_eq!(
+            term.constraints(),
+            Constraints(Constraint(t1, Type::bool()))
+        )
     }
 
     #[test]
@@ -132,7 +158,7 @@ mod tests {
         let t1 = types.fresh();
         let term = Term::var(t1, 0);
 
-        assert_eq!(term.collect(), Constraints::empty())
+        assert_eq!(term.constraints(), Constraints::empty())
     }
 
     #[test]
@@ -153,6 +179,6 @@ mod tests {
                 Type::variable_function(vec![t3.clone()], t1.clone()),
             );
 
-        assert_eq!(application.collect(), expected);
+        assert_eq!(application.constraints(), expected);
     }
 }
