@@ -1,76 +1,9 @@
 use super::constraint::{Constraint, Constraints};
+use super::substitution::Substitution;
 use crate::annotated::TypeVar;
 use crate::ir::InferType;
 use crate::{CompileError, FunctionType, Type};
 use std::collections::{HashMap, HashSet};
-
-#[derive(Debug, Eq, PartialEq)]
-crate struct Substitution {
-    solutions: HashMap<TypeVar, InferType>,
-}
-
-impl Substitution {
-    fn new(solutions: HashMap<TypeVar, InferType>) -> Substitution {
-        Substitution { solutions }
-    }
-
-    fn empty() -> Substitution {
-        Substitution {
-            solutions: HashMap::new(),
-        }
-    }
-
-    fn from_pair(type_var: TypeVar, ty: InferType) -> Substitution {
-        let mut solutions = HashMap::new();
-        solutions.insert(type_var, ty);
-
-        Substitution { solutions }
-    }
-
-    fn apply(&self, constraint: &Constraint) -> Constraint {
-        Constraint(
-            self.apply_type(&constraint.left),
-            self.apply_type(&constraint.right),
-        )
-    }
-
-    fn apply_type(&self, ty: &InferType) -> InferType {
-        let mut result = ty;
-
-        for (type_var, solution_type) in &self.solutions {
-            result = self.substitute(result, type_var, solution_type);
-        }
-
-        result.clone()
-    }
-
-    fn substitute(
-        &self,
-        ty: &'apply InferType,
-        type_var: &TypeVar,
-        replacement: &'apply InferType,
-    ) -> &'apply InferType {
-        match ty {
-            InferType::VariableFunction(params, ret) => unimplemented!(),
-
-            InferType::Variable(type_var2) if type_var == type_var2 => replacement,
-
-            _ => ty,
-        }
-    }
-
-    fn compose(&self, other: Substitution) -> Substitution {
-        let mut out = HashMap::new();
-
-        for (type_var, ty) in &self.solutions {
-            out.insert(*type_var, other.apply_type(ty));
-        }
-
-        out.extend(other.solutions);
-
-        Substitution::new(out)
-    }
-}
 
 crate fn unify(constraints: Constraints) -> Result<Substitution, CompileError> {
     if constraints.is_empty() {

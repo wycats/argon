@@ -27,7 +27,7 @@ pub struct TypedFunction<'input> {
 
 #[derive(Debug, PartialEq)]
 pub struct TypedBlock {
-    expressions: Vec<TypedExpression>,
+    pub expressions: Vec<TypedExpression>,
 }
 
 impl TypedBlock {

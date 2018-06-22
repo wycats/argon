@@ -11,6 +11,9 @@ extern crate derive_new;
 #[macro_use]
 extern crate lalrpop_util;
 
+#[macro_use]
+extern crate log;
+
 pub mod compile;
 crate mod infer;
 pub mod ir;

@@ -1,3 +1,4 @@
+use super::annotated;
 use crate::{ast, FunctionModifiers, MathOperator, Spanned, Type};
 
 #[derive(Debug)]
@@ -29,6 +30,35 @@ pub enum Expression {
         lhs: Box<Expression>,
         rhs: Box<Expression>,
     },
+}
+
+impl Expression {
+    crate fn annotate(
+        self,
+        vars: &mut annotated::TypeVars,
+        env: &annotated::TypeEnv,
+    ) -> annotated::Annotated<annotated::Expression> {
+        match self {
+            Expression::Const(expr) => vars.annotate_fresh(annotated::Expression::Const(expr)),
+            Expression::VariableAccess(id) => {
+                let ty = env.get_local(id as usize);
+                annotated::InferType::Resolved(ty)
+                    .annotate(annotated::Expression::VariableAccess(id))
+            }
+            Expression::Binary {
+                operator,
+                box lhs,
+                box rhs,
+            } => {
+                let t1 = vars.fresh();
+                t1.annotate(annotated::Expression::Binary {
+                    operator,
+                    lhs: box lhs.annotate(vars, env),
+                    rhs: box rhs.annotate(vars, env),
+                })
+            }
+        }
+    }
 }
 
 crate fn resolve_module_names(

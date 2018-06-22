@@ -1,6 +1,9 @@
 use super::constraint::Constraint;
+use super::substitution::Substitution;
+use super::unify::unify;
 use crate::ir::annotated::{self, Annotated};
 use crate::ir::InferType;
+use crate::CompileError;
 use std::collections::HashSet;
 use std::ops::{Add, AddAssign};
 
@@ -24,6 +27,10 @@ impl Constraints {
 
     crate fn is_empty(&self) -> bool {
         self.constraints.is_empty()
+    }
+
+    crate fn unify(self) -> Result<Substitution, CompileError> {
+        unify(self)
     }
 
     crate fn take_head(self) -> (Constraint, Constraints) {

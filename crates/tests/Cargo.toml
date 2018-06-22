@@ -7,11 +7,12 @@ version = "1.0.0"
 edition = "2018"
 
 [dependencies]
-
 wasmi = "0.2.0"
 parity-wasm = "0.27.0"
 nan-preserving-float = "0.1.0"
 lalrpop-util = { git = "https://github.com/wycats/lalrpop.git", branch = "module_attributes" }
+log = "0.4.2"
+pretty_env_logger = "0.2.3"
 
 [dependencies.wasm]
 path = "../direct"

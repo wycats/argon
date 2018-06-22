@@ -1,5 +1,7 @@
 use crate::compile::math::{binary_op_type, math_op, BinaryType};
-use crate::ir::{annotated, hir, CompileError, ConstExpression, Type};
+use crate::infer::constraint::CollectConstraints;
+use crate::ir::annotated::TypeVars;
+use crate::ir::{annotated, typed, CompileError, ConstExpression, Type};
 use crate::MathType;
 use crate::{ast, resolved};
 use parity_wasm::{builder, elements};
@@ -12,8 +14,21 @@ struct CodeLocation {
 }
 
 pub fn compile_module(input: &ast::Module) -> Result<elements::Module, CompileError> {
+    let mut vars = TypeVars::new();
+
     let module = resolved::resolve_module_names(input)?;
-    // let module = annotated::Module::from(module);
+    let module = annotated::Module::from(module, &mut vars);
+    trace!(target: "wasm::compile::module", "Module: {:#?}", module);
+    let constraints = module.constraints();
+    trace!(target: "wasm::compile::constraints", "Constraints: {:#?}", constraints);
+    let substitutions = constraints.unify()?;
+    trace!(target: "wasm::compile::substitutions", "Substitutions: {:#?}", substitutions);
+    let module = substitutions.apply_module(module);
+    trace!(target: "wasm::compile::applies", "After Substitutions: {:#?}", module);
+
+    unimplemented!();
+
+    /*
     let typed = module.ast_to_hir()?;
 
     let mut builder = builder::module();
@@ -35,11 +50,12 @@ pub fn compile_module(input: &ast::Module) -> Result<elements::Module, CompileEr
     }
 
     Ok(builder.build())
+    */
 }
 
 fn compile_function(
     function: builder::FunctionBuilder,
-    input: &hir::TypedFunction,
+    input: &typed::TypedFunction,
 ) -> builder::FunctionDefinition {
     let mut signature = function.signature();
 
@@ -59,7 +75,10 @@ fn compile_function(
         .build()
 }
 
-fn compile_body(input: &hir::TypedBlock, function: &hir::TypedFunction) -> Vec<elements::Opcode> {
+fn compile_body(
+    input: &typed::TypedBlock,
+    function: &typed::TypedFunction,
+) -> Vec<elements::Opcode> {
     let mut instructions = vec![];
 
     for expression in input.iter() {
@@ -73,12 +92,12 @@ fn compile_body(input: &hir::TypedBlock, function: &hir::TypedFunction) -> Vec<e
 
 fn compile_expression(
     body: &mut Vec<elements::Opcode>,
-    input: &hir::TypedExpression,
-    function: &hir::TypedFunction,
+    input: &typed::TypedExpression,
+    function: &typed::TypedFunction,
 ) {
     match input {
-        hir::TypedExpression { ty: _, expression } => match expression {
-            hir::Expression::Const(constant) => match constant {
+        typed::TypedExpression { ty: _, expression } => match expression {
+            typed::Expression::Const(constant) => match constant {
                 ConstExpression::I32(int) => body.push(elements::Opcode::I32Const(*int)),
                 ConstExpression::I64(int) => body.push(elements::Opcode::I64Const(*int)),
                 ConstExpression::U32(int) => body.push(elements::Opcode::I32Const(unsafe {
@@ -95,11 +114,11 @@ fn compile_expression(
                 })),
             },
 
-            hir::Expression::VariableAccess(local) => {
+            typed::Expression::VariableAccess(local) => {
                 body.push(elements::Opcode::GetLocal(*local));
             }
 
-            hir::Expression::Binary(operator, box hir::BinaryExpression { lhs, rhs }) => {
+            typed::Expression::Binary(operator, box typed::BinaryExpression { lhs, rhs }) => {
                 let ty = binary_op_type(lhs.ty.clone(), rhs.ty.clone());
 
                 match ty {

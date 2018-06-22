@@ -20,6 +20,7 @@ derive-new = "0.5.4"
 parity-wasm = "0.27.0"
 nan-preserving-float = "0.1.0"
 itertools = "0.7.8"
+log = "0.4.2"
 
 [dev-dependencies]
 wasmi = "0.2.0"

@@ -1,4 +1,4 @@
-use super::resolved;
+use super::{resolved, typed};
 use crate::{ast, FunctionModifiers, FunctionType, MathOperator, Spanned, Type};
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
@@ -37,6 +37,23 @@ impl TypeVars {
     }
 }
 
+// The name resolution phase resolves names to offsets, which are looked
+// up in the TypeEnv
+crate struct TypeEnv<'input> {
+    // When we get locals, this will need to be changed
+    crate params: &'input [Type],
+}
+
+impl TypeEnv<'input> {
+    crate fn params(params: &'input [Type]) -> TypeEnv<'input> {
+        TypeEnv { params }
+    }
+
+    crate fn get_local(&self, local: usize) -> Type {
+        self.params[local].clone()
+    }
+}
+
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 crate enum InferType {
     Resolved(Type),
@@ -46,6 +63,13 @@ crate enum InferType {
 }
 
 impl InferType {
+    crate fn into_type(self) -> Type {
+        match self {
+            InferType::Resolved(ty) => ty,
+            other => panic!("Cannot convert a {:?} into a Type", other),
+        }
+    }
+
     crate fn annotate<T>(self, item: T) -> Annotated<T> {
         Annotated { ty: self, item }
     }
@@ -137,7 +161,10 @@ impl Function<'input> {
         }: resolved::Function<'input>,
         vars: &mut TypeVars,
     ) -> Function<'input> {
-        let body = Block::from(body, vars);
+        let body = {
+            let env = TypeEnv::params(&params);
+            Block::from(body, vars, &env)
+        };
 
         Function {
             name,
@@ -156,11 +183,11 @@ crate struct Block {
 }
 
 impl Block {
-    crate fn from(block: resolved::Block, vars: &mut TypeVars) -> Annotated<Block> {
+    crate fn from(block: resolved::Block, vars: &mut TypeVars, env: &TypeEnv) -> Annotated<Block> {
         let expressions = block
             .expressions
             .into_iter()
-            .map(|e| Expression::from(e, vars))
+            .map(|e| e.annotate(vars, &env))
             .collect();
 
         vars.annotate_fresh(Block { expressions })
@@ -190,24 +217,21 @@ impl Expression {
         Expression::Const(ast::ConstExpression::Bool(value))
     }
 
-    crate fn from(expr: resolved::Expression, vars: &mut TypeVars) -> Annotated<Expression> {
-        match expr {
-            resolved::Expression::Const(expr) => vars.annotate_fresh(Expression::Const(expr)),
-            resolved::Expression::VariableAccess(id) => {
-                vars.annotate_fresh(Expression::VariableAccess(id))
-            }
-            resolved::Expression::Binary {
-                operator,
-                box lhs,
-                box rhs,
-            } => {
-                let t1 = vars.fresh();
-                t1.annotate(Expression::Binary {
-                    operator,
-                    lhs: box Expression::from(lhs, vars),
-                    rhs: box Expression::from(rhs, vars),
-                })
-            }
+    crate fn into_typed_expression(self, ty: Type) -> typed::TypedExpression {
+        match self {
+            _ => unimplemented!(),
+        }
+    }
+}
+
+impl Annotated<Expression> {
+    crate fn into_typed_expression(self, ty: &InferType) -> typed::TypedExpression {
+        match ty {
+            InferType::Resolved(ty) => match self.item {
+                _ => unimplemented!()
+            },
+
+            other => panic!("Can only convert an annotated expression with a resolved type into a typed expression")
         }
     }
 }

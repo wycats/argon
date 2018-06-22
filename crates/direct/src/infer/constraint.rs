@@ -28,7 +28,7 @@ crate fn Constraint(left: InferType, right: InferType) -> Constraint {
     Constraint { left, right }
 }
 
-trait CollectConstraints {
+crate trait CollectConstraints {
     fn constraints(&self) -> Constraints;
 }
 

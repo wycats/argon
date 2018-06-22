@@ -21,6 +21,10 @@ pub fn invoke(
         .unwrap()
 }
 
+crate fn init_logger() {
+    pretty_env_logger::init();
+}
+
 #[allow(unused_macros)]
 macro_rules! runtime_values {
     ($($e:expr),*) => {
@@ -56,6 +60,7 @@ macro_rules! syntax {
 
             #[test]
             fn test_compile() {
+                crate::init_logger();
                 let module = compile_module(&module());
                 let value = invoke(&module.unwrap(), stringify!($name), &runtime_values!($($args),*));
 
@@ -81,6 +86,8 @@ macro_rules! syntax {
 
             #[test]
             fn test_parse() {
+                crate::init_logger();
+
                 let expected: Vec<ast::Module<'static>> = 
                     AstBuilder::new().module(|$module_builder| $parse).done();
 
@@ -89,6 +96,8 @@ macro_rules! syntax {
 
             #[test]
             fn test_compile() {
+                crate::init_logger();
+
                 let module = compile_module(&module());
                 let value = invoke(&module.unwrap(), stringify!($name), &runtime_values!($($args),*));
 
@@ -113,6 +122,8 @@ macro_rules! compile_error {
 
             #[test]
             fn test() {
+                crate::init_logger();
+
                 let location = match module() {
                     Ok(module) => panic!("Expected parse error"),
                     Err(err) => parser::location(err)
