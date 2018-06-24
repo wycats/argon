@@ -1,19 +1,28 @@
 use super::constraint::Constraint;
 use super::substitution::Substitution;
-use super::unify::unify;
 use crate::ir::annotated::{self, Annotated};
 use crate::ir::InferType;
 use crate::CompileError;
-use std::collections::HashSet;
+use std::collections::BTreeSet;
 use std::ops::{Add, AddAssign};
 
 #[derive(Debug, Eq, PartialEq)]
 crate struct Constraints {
-    crate constraints: HashSet<Constraint>,
+    crate constraints: BTreeSet<Constraint>,
 }
 
+impl IntoIterator for &'input Constraints {
+    type Item = &'input Constraint;
+    type IntoIter = std::collections::btree_set::Iter<'input, Constraint>;
+
+    fn into_iter(self) -> std::collections::btree_set::Iter<'input, Constraint> {
+        self.constraints.iter()
+    }
+}
+
+#[allow(non_snake_case)]
 crate fn Constraints(initial: Constraint) -> Constraints {
-    let mut constraints = HashSet::new();
+    let mut constraints = BTreeSet::new();
     constraints.insert(initial);
     Constraints { constraints }
 }
@@ -21,16 +30,12 @@ crate fn Constraints(initial: Constraint) -> Constraints {
 impl Constraints {
     crate fn empty() -> Constraints {
         Constraints {
-            constraints: HashSet::new(),
+            constraints: BTreeSet::new(),
         }
     }
 
     crate fn is_empty(&self) -> bool {
         self.constraints.is_empty()
-    }
-
-    crate fn unify(self) -> Result<Substitution, CompileError> {
-        unify(self)
     }
 
     crate fn take_head(self) -> (Constraint, Constraints) {

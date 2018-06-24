@@ -21,9 +21,11 @@ parity-wasm = "0.27.0"
 nan-preserving-float = "0.1.0"
 itertools = "0.7.8"
 log = "0.4.2"
+ena = "0.9.3"
 
 [dev-dependencies]
 wasmi = "0.2.0"
+pretty_env_logger = "0.2.3"
 
 # Add a build-time dependency on the lalrpop library:
 [build-dependencies]

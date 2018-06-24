@@ -1,5 +1,6 @@
 use crate::compile::math::{MathOperator, MathType};
 use crate::ir::resolved::ResolveError;
+use crate::InferType;
 use itertools::Itertools;
 use nan_preserving_float::{F32, F64};
 use std::convert::From;
@@ -9,6 +10,7 @@ use std::fmt;
 pub enum CompileError {
     ResolveError(ResolveError),
     TypeError(TypeError),
+    UnifyError(InferType, InferType),
     Unimplemented,
 }
 
@@ -52,7 +54,7 @@ impl fmt::Debug for ConstExpression {
     }
 }
 
-#[derive(PartialEq, Eq, Clone, Hash)]
+#[derive(PartialEq, Eq, Ord, PartialOrd, Clone, Hash)]
 pub enum Type {
     Math(MathType),
     Bool,
@@ -61,12 +63,13 @@ pub enum Type {
     Void,
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, Hash)]
+#[derive(Debug, PartialEq, Eq, Ord, PartialOrd, Clone, Hash)]
 pub struct FunctionType {
     pub params: Vec<Type>,
     pub ret: Type,
 }
 
+#[allow(non_snake_case)]
 pub fn FunctionType(params: Vec<Type>, ret: Type) -> FunctionType {
     FunctionType { params, ret }
 }
@@ -78,6 +81,26 @@ impl Type {
 
     pub fn bool() -> Type {
         Type::Bool
+    }
+
+    pub fn is_integer(&self) -> bool {
+        match self {
+            Type::Math(math) => match math {
+                MathType::I32 | MathType::I64 | MathType::U32 | MathType::U64 => true,
+                _ => false,
+            },
+            _ => false,
+        }
+    }
+
+    pub fn is_float(&self) -> bool {
+        match self {
+            Type::Math(math) => match math {
+                MathType::F32 | MathType::F64 => true,
+                _ => false,
+            },
+            _ => false,
+        }
     }
 
     pub fn i32() -> Type {

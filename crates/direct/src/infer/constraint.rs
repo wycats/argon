@@ -2,9 +2,9 @@ crate use super::constraint_set::Constraints;
 use crate::ir::annotated::{self, Annotated};
 use crate::ir::InferType;
 use crate::{ast, FunctionType, Type};
-use std::collections::HashSet;
+use std::collections::BTreeSet;
 
-#[derive(Debug, Hash, Eq, PartialEq)]
+#[derive(Debug, Hash, Eq, PartialEq, Ord, PartialOrd)]
 crate struct Constraint {
     crate left: InferType,
     crate right: InferType,
@@ -24,6 +24,7 @@ impl std::ops::Add for Constraint {
     }
 }
 
+#[allow(non_snake_case)]
 crate fn Constraint(left: InferType, right: InferType) -> Constraint {
     Constraint { left, right }
 }
@@ -94,11 +95,11 @@ impl CollectConstraints for Annotated<annotated::Expression> {
                 }
 
                 ast::ConstExpression::Integer(..) => {
-                    Constraints(Constraint::new(ty.clone(), InferType::i32()))
+                    Constraints(Constraint::new(ty.clone(), InferType::integer()))
                 }
 
                 ast::ConstExpression::Float(..) => {
-                    Constraints(Constraint::new(ty.clone(), InferType::f32()))
+                    Constraints(Constraint::new(ty.clone(), InferType::float()))
                 }
             },
             annotated::Expression::VariableAccess(_) => Constraints::empty(),
@@ -119,13 +120,14 @@ impl CollectConstraints for Annotated<annotated::Expression> {
 #[cfg(test)]
 mod tests {
     use super::{CollectConstraints, Constraint, Constraints};
-    use crate::ir::annotated::{Annotated, Expression, TypeVars};
+    use crate::ir::annotated::{Annotated, Expression};
     use crate::ir::InferType as Type;
+    use crate::UnifyTable;
 
     type Term = Annotated<Expression>;
 
-    fn types() -> TypeVars {
-        TypeVars::new()
+    fn types() -> UnifyTable {
+        UnifyTable::new()
     }
 
     #[test]
@@ -133,9 +135,12 @@ mod tests {
         let mut types = types();
 
         let t1 = types.fresh();
-        let term = Term::i32(t1.clone(), 1);
+        let term = Term::integer(t1.clone(), 1);
 
-        assert_eq!(term.constraints(), Constraints(Constraint(t1, Type::i32())))
+        assert_eq!(
+            term.constraints(),
+            Constraints(Constraint(t1, Type::integer()))
+        )
     }
 
     #[test]

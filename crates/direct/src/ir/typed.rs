@@ -7,7 +7,17 @@ pub enum Expression {
     Const(ConstExpression),
 
     VariableAccess(u32),
-    Binary(MathOperator, Box<BinaryExpression>),
+    Binary {
+        operator: MathOperator,
+        lhs: Box<TypedExpression>,
+        rhs: Box<TypedExpression>,
+    },
+}
+
+impl Expression {
+    crate fn typed(self, ty: Type) -> TypedExpression {
+        TypedExpression::new(self, ty)
+    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -178,7 +188,11 @@ fn typed_binary(
 
     if lty == rty {
         let ty = lty.clone();
-        let expr = Expression::Binary(operator, Box::new(BinaryExpression { lhs, rhs }));
+        let expr = Expression::Binary {
+            operator,
+            lhs: box lhs,
+            rhs: box rhs,
+        };
 
         Ok(TypedExpression::new(expr, ty))
     } else {

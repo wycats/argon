@@ -1,9 +1,13 @@
 use super::{resolved, typed};
-use crate::{ast, FunctionModifiers, FunctionType, MathOperator, Spanned, Type};
+use crate::{
+    ast, FunctionModifiers, FunctionType, MathOperator, MathType, Spanned, Type, UnifyTable,
+};
+use itertools::Itertools;
+use std::fmt;
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
-crate struct TypeVar {
-    var: usize,
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
+pub struct TypeVar {
+    crate var: usize,
 }
 
 impl TypeVar {
@@ -12,28 +16,9 @@ impl TypeVar {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Hash)]
-crate struct TypeVars {
-    current: usize,
-}
-
-impl TypeVars {
-    crate fn new() -> TypeVars {
-        TypeVars { current: 0 }
-    }
-
-    crate fn fresh(&mut self) -> InferType {
-        let current = self.current;
-        self.current += 1;
-
-        InferType::Variable(TypeVar::new(current))
-    }
-
-    crate fn annotate_fresh<T>(&mut self, item: T) -> Annotated<T> {
-        Annotated {
-            ty: self.fresh(),
-            item,
-        }
+impl fmt::Debug for TypeVar {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "<T{}>", self.var)
     }
 }
 
@@ -54,12 +39,66 @@ impl TypeEnv<'input> {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Hash)]
-crate enum InferType {
+#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
+pub enum ConstrainedType {
+    Integer,
+    Float,
+}
+
+impl ConstrainedType {
+    crate fn unifies(&self, other: &Type) -> bool {
+        let ty = match other {
+            Type::Math(math) => math,
+            _ => return false,
+        };
+
+        match self {
+            ConstrainedType::Integer => match ty {
+                MathType::I32 | MathType::I64 | MathType::U32 | MathType::U64 => true,
+                _ => false,
+            },
+
+            ConstrainedType::Float => match ty {
+                MathType::F32 | MathType::F64 => true,
+                _ => false,
+            },
+        }
+    }
+
+    crate fn unify(&self, other: &Type) -> Option<InferType> {
+        None
+    }
+}
+
+#[derive(Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
+pub enum InferType {
     Resolved(Type),
+    Constrained(ConstrainedType),
     Function(Vec<Type>, Type),
     VariableFunction(Vec<InferType>, Box<InferType>),
     Variable(TypeVar),
+}
+
+impl fmt::Debug for InferType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            InferType::Resolved(ty) => write!(f, "{:?}", ty),
+            InferType::Constrained(constrained) => write!(f, "{:?}", constrained),
+            InferType::Function(params, ret) => write!(
+                f,
+                "({:?}) -> {:?}",
+                params.iter().map(|p| format!("{:?}", p)).join(", "),
+                ret
+            ),
+            InferType::VariableFunction(params, ret) => write!(
+                f,
+                "({:?}) -> {:?}",
+                params.iter().map(|p| format!("{:?}", p)).join(", "),
+                ret
+            ),
+            InferType::Variable(var) => write!(f, "{:?}", var),
+        }
+    }
 }
 
 impl InferType {
@@ -67,6 +106,13 @@ impl InferType {
         match self {
             InferType::Resolved(ty) => ty,
             other => panic!("Cannot convert a {:?} into a Type", other),
+        }
+    }
+
+    crate fn is_resolved(&self) -> bool {
+        match self {
+            InferType::Resolved(..) => true,
+            _ => false,
         }
     }
 
@@ -87,8 +133,28 @@ impl InferType {
         InferType::VariableFunction(params, box ret)
     }
 
+    crate fn integer() -> InferType {
+        InferType::Constrained(ConstrainedType::Integer)
+    }
+
+    crate fn float() -> InferType {
+        InferType::Constrained(ConstrainedType::Float)
+    }
+
     crate fn i32() -> InferType {
         InferType::Resolved(Type::i32())
+    }
+
+    crate fn i64() -> InferType {
+        InferType::Resolved(Type::i64())
+    }
+
+    crate fn u32() -> InferType {
+        InferType::Resolved(Type::u32())
+    }
+
+    crate fn u64() -> InferType {
+        InferType::Resolved(Type::u64())
     }
 
     crate fn f32() -> InferType {
@@ -128,7 +194,7 @@ crate struct Module<'input> {
 impl Module<'input> {
     crate fn from(
         resolved::Module { funcs }: resolved::Module<'input>,
-        vars: &mut TypeVars,
+        vars: &mut UnifyTable,
     ) -> Module<'input> {
         let funcs = funcs
             .into_iter()
@@ -159,7 +225,7 @@ impl Function<'input> {
             body,
             modifiers,
         }: resolved::Function<'input>,
-        vars: &mut TypeVars,
+        vars: &mut UnifyTable,
     ) -> Function<'input> {
         let body = {
             let env = TypeEnv::params(&params);
@@ -183,14 +249,21 @@ crate struct Block {
 }
 
 impl Block {
-    crate fn from(block: resolved::Block, vars: &mut TypeVars, env: &TypeEnv) -> Annotated<Block> {
+    crate fn from(
+        block: resolved::Block,
+        vars: &mut UnifyTable,
+        env: &TypeEnv,
+    ) -> Annotated<Block> {
         let expressions = block
             .expressions
             .into_iter()
             .map(|e| e.annotate(vars, &env))
             .collect();
 
-        vars.annotate_fresh(Block { expressions })
+        Annotated {
+            item: Block { expressions },
+            ty: vars.fresh(),
+        }
     }
 }
 
@@ -208,7 +281,7 @@ crate enum Expression {
 
 impl Expression {
     #[cfg(test)]
-    crate fn i32(value: i32) -> Expression {
+    crate fn integer(value: i32) -> Expression {
         Expression::Const(ast::ConstExpression::Integer(value as i64))
     }
 
@@ -216,32 +289,14 @@ impl Expression {
     crate fn bool(value: bool) -> Expression {
         Expression::Const(ast::ConstExpression::Bool(value))
     }
-
-    crate fn into_typed_expression(self, ty: Type) -> typed::TypedExpression {
-        match self {
-            _ => unimplemented!(),
-        }
-    }
-}
-
-impl Annotated<Expression> {
-    crate fn into_typed_expression(self, ty: &InferType) -> typed::TypedExpression {
-        match ty {
-            InferType::Resolved(ty) => match self.item {
-                _ => unimplemented!()
-            },
-
-            other => panic!("Can only convert an annotated expression with a resolved type into a typed expression")
-        }
-    }
 }
 
 #[cfg(test)]
 impl Annotated<Expression> {
-    crate fn i32(ty: InferType, term: i32) -> Annotated<Expression> {
+    crate fn integer(ty: InferType, term: i32) -> Annotated<Expression> {
         Annotated {
             ty,
-            item: Expression::i32(term),
+            item: Expression::integer(term),
         }
     }
 

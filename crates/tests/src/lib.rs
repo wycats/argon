@@ -22,7 +22,8 @@ pub fn invoke(
 }
 
 crate fn init_logger() {
-    pretty_env_logger::init();
+    #![allow(unused_must_use)]
+    pretty_env_logger::try_init();
 }
 
 #[allow(unused_macros)]

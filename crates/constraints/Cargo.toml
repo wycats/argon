@@ -1,0 +1,16 @@
+cargo-features = ["edition"]
+
+[package]
+
+name = "ergo-constraints"
+version = "1.0.0"
+edition = "2018"
+
+[dependencies]
+datafrog = { git = "https://github.com/rust-lang-nursery/datafrog.git" }
+log = "0.4.2"
+pretty_env_logger = "0.2.3"
+ena = "0.9.3"
+
+[dependencies.wasm]
+path = "../direct"

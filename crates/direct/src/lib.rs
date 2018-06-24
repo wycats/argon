@@ -2,8 +2,9 @@
 #![feature(box_patterns)]
 #![feature(box_syntax)]
 #![deny(rust_2018_idioms)]
+#![deny(unused_must_use)]
 #![allow(unused_extern_crates)]
-#![allow(warnings)]
+#![allow(unused)]
 
 #[macro_use]
 extern crate derive_new;
@@ -28,3 +29,5 @@ pub use self::grammar::{ModuleParser, Token};
 pub use self::ir::*;
 
 pub use self::test_helpers::AstBuilder;
+
+crate use self::infer::unify::UnifyTable;

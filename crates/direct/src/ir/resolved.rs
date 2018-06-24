@@ -1,5 +1,5 @@
 use super::annotated;
-use crate::{ast, FunctionModifiers, MathOperator, Spanned, Type};
+use crate::{ast, FunctionModifiers, MathOperator, Spanned, Type, UnifyTable};
 
 #[derive(Debug)]
 pub struct Module<'input> {
@@ -35,7 +35,7 @@ pub enum Expression {
 impl Expression {
     crate fn annotate(
         self,
-        vars: &mut annotated::TypeVars,
+        vars: &mut UnifyTable,
         env: &annotated::TypeEnv,
     ) -> annotated::Annotated<annotated::Expression> {
         match self {

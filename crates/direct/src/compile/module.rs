@@ -1,6 +1,6 @@
 use crate::compile::math::{binary_op_type, math_op, BinaryType};
 use crate::infer::constraint::CollectConstraints;
-use crate::ir::annotated::TypeVars;
+use crate::infer::unify::UnifyTable;
 use crate::ir::{annotated, typed, CompileError, ConstExpression, Type};
 use crate::MathType;
 use crate::{ast, resolved};
@@ -14,43 +14,38 @@ struct CodeLocation {
 }
 
 pub fn compile_module(input: &ast::Module) -> Result<elements::Module, CompileError> {
-    let mut vars = TypeVars::new();
+    let mut table = UnifyTable::new();
 
     let module = resolved::resolve_module_names(input)?;
-    let module = annotated::Module::from(module, &mut vars);
+    let module = annotated::Module::from(module, &mut table);
     trace!(target: "wasm::compile::module", "Module: {:#?}", module);
     let constraints = module.constraints();
     trace!(target: "wasm::compile::constraints", "Constraints: {:#?}", constraints);
-    let substitutions = constraints.unify()?;
-    trace!(target: "wasm::compile::substitutions", "Substitutions: {:#?}", substitutions);
-    let module = substitutions.apply_module(module);
-    trace!(target: "wasm::compile::applies", "After Substitutions: {:#?}", module);
+    unimplemented!()
+    // let substitutions = constraints.unify()?;
+    // trace!(target: "wasm::compile::substitutions", "Substitutions: {:#?}", substitutions);
+    // let module = substitutions.apply_module(module);
+    // trace!(target: "wasm::compile::applies", "After Substitutions: {:#?}", module);
 
-    unimplemented!();
+    // let mut builder = builder::module();
 
-    /*
-    let typed = module.ast_to_hir()?;
+    // for func in &module.funcs {
+    //     let function = builder::function();
+    //     let function = compile_function(function, func);
+    //     let location: CodeLocation =
+    //         unsafe { std::mem::transmute(builder.push_function(function)) };
 
-    let mut builder = builder::module();
+    //     if func.modifiers.export {
+    //         builder = builder
+    //             .export()
+    //             .field(func.name.node)
+    //             .internal()
+    //             .func(location.signature)
+    //             .build();
+    //     }
+    // }
 
-    for func in &typed.funcs {
-        let function = builder::function();
-        let function = compile_function(function, func);
-        let location: CodeLocation =
-            unsafe { std::mem::transmute(builder.push_function(function)) };
-
-        if func.modifiers.export {
-            builder = builder
-                .export()
-                .field(func.name.node)
-                .internal()
-                .func(location.signature)
-                .build();
-        }
-    }
-
-    Ok(builder.build())
-    */
+    // Ok(builder.build())
 }
 
 fn compile_function(
@@ -118,7 +113,11 @@ fn compile_expression(
                 body.push(elements::Opcode::GetLocal(*local));
             }
 
-            typed::Expression::Binary(operator, box typed::BinaryExpression { lhs, rhs }) => {
+            typed::Expression::Binary {
+                operator,
+                box lhs,
+                box rhs,
+            } => {
                 let ty = binary_op_type(lhs.ty.clone(), rhs.ty.clone());
 
                 match ty {

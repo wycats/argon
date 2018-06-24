@@ -1,7 +1,8 @@
-use crate::compile::math::MathOperator;
-use crate::ir::{FunctionModifiers, Spanned, Type};
+use crate::compile::math::{f64_to_f32, MathOperator, MathType};
+use crate::ir::shared;
+use crate::ir::{typed, FunctionModifiers, Spanned, Type};
 use nan_preserving_float::F64;
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::fmt;
 
 #[derive(PartialEq, Clone, new)]
@@ -85,7 +86,7 @@ pub struct Function<'input> {
     pub ret: Type,
     pub body: Block<'input>,
     pub modifiers: FunctionModifiers,
-    crate mappings: HashMap<String, u32>,
+    crate mappings: BTreeMap<String, u32>,
 }
 
 impl Function<'input> {
@@ -113,8 +114,8 @@ impl Function<'input> {
     }
 }
 
-fn function_mappings(args: &Parameters<'input>) -> HashMap<String, u32> {
-    let mut map = HashMap::new();
+fn function_mappings(args: &Parameters<'input>) -> BTreeMap<String, u32> {
+    let mut map = BTreeMap::new();
 
     for (i, (name, _)) in args.iter().enumerate() {
         map.insert(name.node.to_string(), i as u32);
@@ -156,6 +157,48 @@ pub enum ConstExpression {
     Integer(i64),
     Float(F64),
     Bool(bool),
+}
+
+impl ConstExpression {
+    crate fn into_typed_expression(self, ty: Type) -> typed::TypedExpression {
+        let expr = match self {
+            ConstExpression::Integer(integer) => match ty {
+                Type::Math(MathType::I32) => {
+                    typed::Expression::Const(shared::ConstExpression::I32(integer as i32))
+                }
+
+                Type::Math(MathType::I64) => {
+                    typed::Expression::Const(shared::ConstExpression::I64(integer))
+                }
+
+                Type::Math(MathType::U32) => {
+                    typed::Expression::Const(shared::ConstExpression::U32(integer as u32))
+                }
+
+                Type::Math(MathType::U64) => {
+                    typed::Expression::Const(shared::ConstExpression::U64(integer as u64))
+                }
+
+                other => panic!("BUG: Cannot convert an integer into {:?} (should have been eliminated by type inference)", other)
+            },
+
+            ConstExpression::Float(float) => match ty {
+                Type::Math(MathType::F32) => {
+                    typed::Expression::Const(shared::ConstExpression::F32(f64_to_f32(float)))
+                }
+
+                Type::Math(MathType::F64) => {
+                    typed::Expression::Const(shared::ConstExpression::F64(float))
+                }
+
+                other => panic!("BUG: Cannot convert a float into {:?} (should have been eliminated by type inference)", other)
+            }
+
+            ConstExpression::Bool(bool) => panic!("unimplemented bool")
+        };
+
+        typed::TypedExpression::new(expr, ty)
+    }
 }
 
 impl fmt::Debug for ConstExpression {
