@@ -112,7 +112,7 @@ impl resolved::Expression {
                     ),
 
                     Some(Type::Math(MathType::I64)) => TypedExpression::new(
-                        Expression::Const(ConstExpression::I64(*int)),
+                        Expression::Const(ConstExpression::I64(*int as i64)),
                         Type::Math(MathType::I64),
                     ),
 

@@ -130,7 +130,7 @@ impl ExpressionBuilder {
     }
 
     pub fn i32(self, integer: i32) -> ast::Expression<'static> {
-        ast::Expression::Const(ast::ConstExpression::Integer(integer as i64))
+        ast::Expression::Const(ast::ConstExpression::Integer(integer))
     }
 }
 

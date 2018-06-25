@@ -86,13 +86,13 @@ impl fmt::Debug for InferType {
             InferType::Constrained(constrained) => write!(f, "{:?}", constrained),
             InferType::Function(params, ret) => write!(
                 f,
-                "({:?}) -> {:?}",
+                "({}) -> {:?}",
                 params.iter().map(|p| format!("{:?}", p)).join(", "),
                 ret
             ),
             InferType::VariableFunction(params, ret) => write!(
                 f,
-                "({:?}) -> {:?}",
+                "({}) -> {:?}",
                 params.iter().map(|p| format!("{:?}", p)).join(", "),
                 ret
             ),
@@ -288,6 +288,10 @@ impl Expression {
     #[cfg(test)]
     crate fn bool(value: bool) -> Expression {
         Expression::Const(ast::ConstExpression::Bool(value))
+    }
+
+    crate fn annotate(self, ty: InferType) -> Annotated<Expression> {
+        Annotated { item: self, ty }
     }
 }
 

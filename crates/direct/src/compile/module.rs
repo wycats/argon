@@ -1,10 +1,12 @@
 use crate::compile::math::{binary_op_type, math_op, BinaryType};
 use crate::infer::constraint::CollectConstraints;
 use crate::infer::unify::UnifyTable;
+use crate::ir::annotated::Annotated;
 use crate::ir::{annotated, typed, CompileError, ConstExpression, Type};
 use crate::MathType;
-use crate::{ast, resolved};
+use crate::{ast, resolved, InferType};
 use parity_wasm::{builder, elements};
+use std::mem::transmute;
 
 struct CodeLocation {
     /// Location (index in 'functions' section) of the signature
@@ -21,36 +23,36 @@ pub fn compile_module(input: &ast::Module) -> Result<elements::Module, CompileEr
     trace!(target: "wasm::compile::module", "Module: {:#?}", module);
     let constraints = module.constraints();
     trace!(target: "wasm::compile::constraints", "Constraints: {:#?}", constraints);
-    unimplemented!()
-    // let substitutions = constraints.unify()?;
-    // trace!(target: "wasm::compile::substitutions", "Substitutions: {:#?}", substitutions);
-    // let module = substitutions.apply_module(module);
-    // trace!(target: "wasm::compile::applies", "After Substitutions: {:#?}", module);
+    let substitutions = table.unify(constraints)?;
 
-    // let mut builder = builder::module();
+    trace!(target: "wasm::compile::substitutions", "Substitutions: {:#?}", substitutions);
+    let module = substitutions.apply_module(module);
+    trace!(target: "wasm::compile::applies", "After Substitutions: {:#?}", module);
 
-    // for func in &module.funcs {
-    //     let function = builder::function();
-    //     let function = compile_function(function, func);
-    //     let location: CodeLocation =
-    //         unsafe { std::mem::transmute(builder.push_function(function)) };
+    let mut builder = builder::module();
 
-    //     if func.modifiers.export {
-    //         builder = builder
-    //             .export()
-    //             .field(func.name.node)
-    //             .internal()
-    //             .func(location.signature)
-    //             .build();
-    //     }
-    // }
+    for func in &module.funcs {
+        let function = builder::function();
+        let function = compile_function(function, func);
+        let location: CodeLocation =
+            unsafe { std::mem::transmute(builder.push_function(function)) };
 
-    // Ok(builder.build())
+        if func.modifiers.export {
+            builder = builder
+                .export()
+                .field(func.name.node)
+                .internal()
+                .func(location.signature)
+                .build();
+        }
+    }
+
+    Ok(builder.build())
 }
 
 fn compile_function(
     function: builder::FunctionBuilder,
-    input: &typed::TypedFunction,
+    input: &annotated::Function,
 ) -> builder::FunctionDefinition {
     let mut signature = function.signature();
 
@@ -70,13 +72,10 @@ fn compile_function(
         .build()
 }
 
-fn compile_body(
-    input: &typed::TypedBlock,
-    function: &typed::TypedFunction,
-) -> Vec<elements::Opcode> {
+fn compile_body(input: &annotated::Block, function: &annotated::Function) -> Vec<elements::Opcode> {
     let mut instructions = vec![];
 
-    for expression in input.iter() {
+    for expression in &input.expressions {
         compile_expression(&mut instructions, expression, function);
     }
 
@@ -87,57 +86,82 @@ fn compile_body(
 
 fn compile_expression(
     body: &mut Vec<elements::Opcode>,
-    input: &typed::TypedExpression,
-    function: &typed::TypedFunction,
+    Annotated { item, ty }: &Annotated<annotated::Expression>,
+    function: &annotated::Function,
 ) {
-    match input {
-        typed::TypedExpression { ty: _, expression } => match expression {
-            typed::Expression::Const(constant) => match constant {
-                ConstExpression::I32(int) => body.push(elements::Opcode::I32Const(*int)),
-                ConstExpression::I64(int) => body.push(elements::Opcode::I64Const(*int)),
-                ConstExpression::U32(int) => body.push(elements::Opcode::I32Const(unsafe {
-                    std::mem::transmute(*int)
-                })),
-                ConstExpression::U64(int) => body.push(elements::Opcode::I64Const(unsafe {
-                    std::mem::transmute(*int)
-                })),
-                ConstExpression::F32(float) => body.push(elements::Opcode::F32Const(unsafe {
-                    std::mem::transmute(*float)
-                })),
-                ConstExpression::F64(float) => body.push(elements::Opcode::F64Const(unsafe {
-                    std::mem::transmute(*float)
-                })),
-            },
+    match item {
+        annotated::Expression::Const(constant) => body.push(compile_const(constant, ty)),
 
-            typed::Expression::VariableAccess(local) => {
-                body.push(elements::Opcode::GetLocal(*local));
-            }
+        annotated::Expression::VariableAccess(local) => {
+            body.push(elements::Opcode::GetLocal(*local));
+        }
 
-            typed::Expression::Binary {
-                operator,
-                box lhs,
-                box rhs,
-            } => {
-                let ty = binary_op_type(lhs.ty.clone(), rhs.ty.clone());
+        annotated::Expression::Apply(..) => unimplemented!(),
 
-                match ty {
-                    BinaryType::Same(ty) => {
-                        compile_expression(body, lhs, function);
-                        compile_expression(body, rhs, function);
-                        body.push(math_op(*operator, ty));
-                    }
+        annotated::Expression::Binary {
+            operator,
+            box lhs,
+            box rhs,
+        } => {
+            let ty = binary_op_type(lhs.ty.clone(), rhs.ty.clone());
 
-                    BinaryType::CoerceLeft(_) | BinaryType::CoerceRight(_) => {
-                        unimplemented!("[TODO?] No support for coercions yet")
-                    }
+            match ty {
+                BinaryType::Same(ty) => {
+                    compile_expression(body, lhs, function);
+                    compile_expression(body, rhs, function);
+                    body.push(math_op(*operator, ty));
+                }
 
-                    BinaryType::Incompatible(lhs, rhs) => {
-                        panic!("TypeError: {:?} + {:?} is invalid", lhs, rhs)
-                    }
+                BinaryType::CoerceLeft(_) | BinaryType::CoerceRight(_) => {
+                    unimplemented!("[TODO?] No support for coercions yet")
+                }
+
+                BinaryType::Incompatible(lhs, rhs) => {
+                    panic!("TypeError: {:?} + {:?} is invalid", lhs, rhs)
                 }
             }
-        },
+        }
     }
+}
+
+fn compile_const(constant: &ast::ConstExpression, ty: &InferType) -> elements::Opcode {
+    let ty = ty.clone().into_type();
+
+    match ty {
+        Type::Math(math) => match math {
+            MathType::I32 => elements::Opcode::I32Const(constant.to_i32()),
+            MathType::I64 => elements::Opcode::I64Const(constant.to_i32() as i64),
+            MathType::U32 => elements::Opcode::I32Const(unsafe { transmute(constant.to_u32()) }),
+            MathType::U64 => {
+                elements::Opcode::I64Const(unsafe { transmute(constant.to_i32() as i64) })
+            }
+
+            MathType::F32 => unimplemented!(),
+            MathType::F64 => unimplemented!(),
+        },
+
+        other => panic!(
+            "constant {:?} with type {:?} should have been eliminated by type inference",
+            constant, other
+        ),
+    }
+
+    // match constant {
+    //     ConstExpression::I32(int) => elements::Opcode::I32Const(*int),
+    //     ConstExpression::I64(int) => body.push(elements::Opcode::I64Const(*int)),
+    //     ConstExpression::U32(int) => body.push(elements::Opcode::I32Const(unsafe {
+    //         std::mem::transmute(*int)
+    //     })),
+    //     ConstExpression::U64(int) => body.push(elements::Opcode::I64Const(unsafe {
+    //         std::mem::transmute(*int)
+    //     })),
+    //     ConstExpression::F32(float) => body.push(elements::Opcode::F32Const(unsafe {
+    //         std::mem::transmute(*float)
+    //     })),
+    //     ConstExpression::F64(float) => body.push(elements::Opcode::F64Const(unsafe {
+    //         std::mem::transmute(*float)
+    //     })),
+    // }
 }
 
 fn parameter_type(input: &Type) -> elements::ValueType {

@@ -154,12 +154,38 @@ impl fmt::Debug for Block<'input> {
 
 #[derive(PartialEq, Copy, Clone)]
 pub enum ConstExpression {
-    Integer(i64),
+    Integer(i32),
     Float(F64),
     Bool(bool),
 }
 
+fn is_float_int(float: F64) -> bool {
+    float.to_float().floor() == float.to_float()
+}
+
+fn is_float_uint(float: F64) -> bool {
+    float.to_float().floor() == float.to_float() && float.to_float() >= 0.0
+}
+
 impl ConstExpression {
+    crate fn to_i32(&self) -> i32 {
+        match self {
+            ConstExpression::Integer(int) => *int,
+            ConstExpression::Float(float) if is_float_int(*float) => float.to_float() as i32,
+
+            _ => panic!("Cannot convert {:?} to an integer"),
+        }
+    }
+
+    crate fn to_u32(&self) -> u32 {
+        match self {
+            ConstExpression::Integer(int) if *int >= 0 => *int as u32,
+            ConstExpression::Float(float) if is_float_uint(*float) => float.to_float() as u32,
+
+            _ => panic!("Cannot convert {:?} to an integer"),
+        }
+    }
+
     crate fn into_typed_expression(self, ty: Type) -> typed::TypedExpression {
         let expr = match self {
             ConstExpression::Integer(integer) => match ty {
@@ -168,7 +194,7 @@ impl ConstExpression {
                 }
 
                 Type::Math(MathType::I64) => {
-                    typed::Expression::Const(shared::ConstExpression::I64(integer))
+                    typed::Expression::Const(shared::ConstExpression::I64(integer as i64))
                 }
 
                 Type::Math(MathType::U32) => {

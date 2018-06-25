@@ -1,4 +1,5 @@
 use crate::ir::Type;
+use crate::InferType;
 use nan_preserving_float::{F32, F64};
 use parity_wasm::elements::{self, Opcode};
 use std::fmt;
@@ -31,18 +32,14 @@ impl MathType {
 
 impl fmt::Debug for MathType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "{}",
-            match self {
-                MathType::I32 => "i32",
-                MathType::I64 => "i64",
-                MathType::U32 => "u32",
-                MathType::U64 => "u64",
-                MathType::F32 => "f32",
-                MathType::F64 => "f64",
-            }
-        )
+        match self {
+            MathType::I32 => write!(f, "i32"),
+            MathType::I64 => write!(f, "i64"),
+            MathType::U32 => write!(f, "u32"),
+            MathType::U64 => write!(f, "u64"),
+            MathType::F32 => write!(f, "f32"),
+            MathType::F64 => write!(f, "f64"),
+        }
     }
 }
 
@@ -54,7 +51,10 @@ crate enum BinaryType {
     Incompatible(Type, Type),
 }
 
-crate fn binary_op_type(lhs: Type, rhs: Type) -> BinaryType {
+crate fn binary_op_type(lhs: InferType, rhs: InferType) -> BinaryType {
+    let lhs = lhs.into_type();
+    let rhs = rhs.into_type();
+
     match (lhs, rhs) {
         (Type::Math(lhs), Type::Math(rhs)) if lhs == rhs => BinaryType::Same(lhs),
         (left, right) => BinaryType::Incompatible(left, right),
