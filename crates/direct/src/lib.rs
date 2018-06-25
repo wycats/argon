@@ -4,7 +4,6 @@
 #![deny(rust_2018_idioms)]
 #![deny(unused_must_use)]
 #![allow(unused_extern_crates)]
-#![allow(unused)]
 
 #[macro_use]
 extern crate derive_new;
@@ -31,3 +30,9 @@ pub use self::ir::*;
 pub use self::test_helpers::AstBuilder;
 
 crate use self::infer::unify::UnifyTable;
+
+#[cfg(test)]
+crate fn init_logger() {
+    #![allow(unused_must_use)]
+    pretty_env_logger::try_init();
+}

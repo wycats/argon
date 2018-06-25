@@ -1,7 +1,6 @@
-use crate::compile::math::{f64_to_f32, MathOperator, MathType};
-use crate::ir::shared;
+use crate::compile::math::MathOperator;
 use crate::ir::{FunctionModifiers, Spanned, Type};
-use nan_preserving_float::F32;
+use nan_preserving_float::F64;
 use std::collections::BTreeMap;
 use std::fmt;
 
@@ -155,15 +154,15 @@ impl fmt::Debug for Block<'input> {
 #[derive(PartialEq, Copy, Clone)]
 pub enum ConstExpression {
     Integer(i32),
-    Float(F32),
+    Float(F64),
     Bool(bool),
 }
 
-fn is_float_int(float: F32) -> bool {
+fn is_float_int(float: F64) -> bool {
     float.to_float().floor() == float.to_float()
 }
 
-fn is_float_uint(float: F32) -> bool {
+fn is_float_uint(float: F64) -> bool {
     float.to_float().floor() == float.to_float() && float.to_float() >= 0.0
 }
 
@@ -189,6 +188,15 @@ impl ConstExpression {
     crate fn to_f32(&self) -> f32 {
         match self {
             ConstExpression::Integer(int) if *int >= 0 => *int as f32,
+            ConstExpression::Float(float) => float.to_float() as f32,
+
+            _ => panic!("Cannot convert {:?} to a float"),
+        }
+    }
+
+    crate fn to_f64(&self) -> f64 {
+        match self {
+            ConstExpression::Integer(int) if *int >= 0 => *int as f64,
             ConstExpression::Float(float) => float.to_float(),
 
             _ => panic!("Cannot convert {:?} to a float"),

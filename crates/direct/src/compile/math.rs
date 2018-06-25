@@ -1,6 +1,5 @@
 use crate::ir::Type;
 use crate::InferType;
-use nan_preserving_float::{F32, F64};
 use parity_wasm::elements::{self, Opcode};
 use std::fmt;
 
@@ -12,22 +11,6 @@ pub enum MathType {
     U64,
     F32,
     F64,
-}
-
-impl MathType {
-    crate fn is_integer(&self) -> bool {
-        match self {
-            MathType::I32 | MathType::I64 | MathType::U32 | MathType::U64 => true,
-            _ => false,
-        }
-    }
-
-    crate fn is_float(&self) -> bool {
-        match self {
-            MathType::F32 | MathType::F64 => true,
-            _ => false,
-        }
-    }
 }
 
 impl fmt::Debug for MathType {
@@ -45,8 +28,6 @@ impl fmt::Debug for MathType {
 
 #[derive(Debug)]
 crate enum BinaryType {
-    CoerceLeft(MathType),
-    CoerceRight(MathType),
     Same(MathType),
     Incompatible(Type, Type),
 }
@@ -128,8 +109,4 @@ crate fn math_op(operator: MathOperator, ty: MathType) -> elements::Opcode {
 
         _ => unimplemented!("Unimplemented operator {:?} for {:?}", operator, ty),
     }
-}
-
-crate fn f64_to_f32(input: F64) -> F32 {
-    F32::from_float(input.to_float() as f32)
 }

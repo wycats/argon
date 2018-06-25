@@ -1,12 +1,7 @@
-use super::constraint::{Constraint, Constraints};
 use crate::annotated::{self, Annotated, TypeVar};
 use crate::ir::InferType;
-use crate::shared::Type;
-use crate::{ast, shared};
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
 use std::fmt;
-
-type SubstitutionMap = BTreeMap<TypeVar, InferType>;
 
 #[derive(Eq, PartialEq)]
 crate struct Substitution {
@@ -14,10 +9,13 @@ crate struct Substitution {
 }
 
 impl Substitution {
-    crate fn new(solutions: BTreeMap<TypeVar, InferType>) -> Substitution {
-        Substitution { solutions }
+    crate fn empty() -> Substitution {
+        Substitution {
+            solutions: BTreeMap::new(),
+        }
     }
 
+    #[cfg(test)]
     crate fn from(tuples: impl AsRef<[(usize, InferType)]>) -> Substitution {
         let mut map = BTreeMap::new();
 
@@ -26,19 +24,6 @@ impl Substitution {
         }
 
         Substitution { solutions: map }
-    }
-
-    crate fn empty() -> Substitution {
-        Substitution {
-            solutions: BTreeMap::new(),
-        }
-    }
-
-    crate fn from_pair(type_var: TypeVar, ty: InferType) -> Substitution {
-        let mut solutions = BTreeMap::new();
-        solutions.insert(type_var, ty);
-
-        Substitution { solutions }
     }
 
     crate fn set(&mut self, key: TypeVar, ty: InferType) {
@@ -98,7 +83,7 @@ impl Substitution {
         match item {
             c @ annotated::Expression::Const(..) => c.annotate(ty),
             v @ annotated::Expression::VariableAccess(..) => v.annotate(ty),
-            annotated::Expression::Apply(box expr, params) => unimplemented!(),
+            annotated::Expression::Apply(box _expr, _params) => unimplemented!(),
             annotated::Expression::Binary {
                 operator,
                 box lhs,

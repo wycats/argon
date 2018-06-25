@@ -5,6 +5,7 @@ use crate::ast::*;
 use crate::ir::*;
 use crate::MathOperator;
 use std::str::FromStr;
+use nan_preserving_float::F64;
 
 grammar;
 
@@ -53,7 +54,8 @@ Expression: Expression<'input> = {
 
 Expression1: Expression<'input> = {
     <Identifier> => Expression::VariableAccess(<>),
-    <I32>
+    <I32>,
+    <F64>
 }
 
 Expression2: Expression<'input> = {
@@ -69,6 +71,15 @@ Expression3: Expression<'input> = {
 }
 
 Identifier: Identifier<'input> = <id: Spanned<RawIdentifier>> => id;
-RawIdentifier: RawIdentifier<'input> = <id: r"[a-zA-Z][a-zA-Z0-9]*"> => ident(id);
+RawIdentifier: RawIdentifier<'input> = <id: r"[a-zA-Z_][a-zA-Z0-9_]*"> => ident(id);
 
 I32: Expression<'input> = <r"[0-9]+"> => Expression::Const(ast::ConstExpression::Integer(FromStr::from_str(<>).unwrap()));
+F64: Expression<'input> = <r"[0-9]+.[0-9]+"> => Expression::Const(ast::ConstExpression::Float(F64::from_float(FromStr::from_str(<>).unwrap())));
+
+match {
+    r"[0-9]+.[0-9]+"
+} else {
+    r"[0-9]+"
+} else {
+    _
+}

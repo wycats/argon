@@ -5,7 +5,7 @@ name = "wasm-examples"
 version = "1.0.0"
 
 [workspace]
-members = ["crates/direct", "crates/tests", "crates/constraints"]
+members = ["crates/direct", "crates/tests"]
 
 [dev-dependencies]
 wasmi = "0.2.0"

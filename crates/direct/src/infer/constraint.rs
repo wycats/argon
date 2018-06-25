@@ -1,8 +1,7 @@
 crate use super::constraint_set::Constraints;
+use crate::ast;
 use crate::ir::annotated::{self, Annotated};
 use crate::ir::InferType;
-use crate::{ast, FunctionType, Type};
-use std::collections::BTreeSet;
 
 #[derive(Debug, Hash, Eq, PartialEq, Ord, PartialOrd)]
 crate struct Constraint {
@@ -106,7 +105,7 @@ impl CollectConstraints for Annotated<annotated::Expression> {
             },
             annotated::Expression::VariableAccess(_) => Constraints::empty(),
             annotated::Expression::Binary {
-                operator,
+                operator: _,
                 lhs: box lhs,
                 rhs: box rhs,
             } => {

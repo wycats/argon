@@ -1,10 +1,10 @@
-use super::constraint::{Constraint, Constraints};
+use super::constraint::Constraints;
 use super::substitution::Substitution;
-use crate::annotated::{Annotated, ConstrainedType, TypeVar};
+use crate::annotated::{Annotated, TypeVar};
 use crate::ir::InferType;
-use crate::{CompileError, FunctionType, MathType, Type};
-use ena::unify::{InPlaceUnificationTable, UnificationTable, UnifyKey, UnifyValue};
-use std::collections::{BTreeMap, BTreeSet};
+use crate::CompileError;
+use ena::unify::{InPlaceUnificationTable, UnifyKey, UnifyValue};
+use std::collections::BTreeSet;
 
 impl UnifyKey for TypeVar {
     type Value = InferType;
@@ -118,18 +118,15 @@ struct Unify {
 }
 
 impl Unify {
-    fn unify(mut self) -> Result<Substitution, CompileError> {
+    fn unify(self) -> Result<Substitution, CompileError> {
         let Unify {
             mut table,
             constraints,
-            mut keys,
+            keys,
         } = self;
 
         {
-            let mut unify = UnifyOne {
-                table: &mut table,
-                keys: &mut keys,
-            };
+            let mut unify = UnifyOne { table: &mut table };
 
             for constraint in &constraints {
                 unify.constraint((&constraint.left, &constraint.right))?;
@@ -149,7 +146,6 @@ impl Unify {
 
 struct UnifyOne<'unify> {
     table: &'unify mut InPlaceUnificationTable<TypeVar>,
-    keys: &'unify mut BTreeSet<TypeVar>,
 }
 
 impl UnifyOne<'unify> {
@@ -159,7 +155,7 @@ impl UnifyOne<'unify> {
         match (left, right) {
             (left @ InferType::Resolved(..), right @ InferType::Resolved(..)) if left == right => {}
 
-            (left @ InferType::Resolved(..), right @ InferType::Resolved(..)) => {
+            (_left @ InferType::Resolved(..), _right @ InferType::Resolved(..)) => {
                 return Err(CompileError::Unimplemented)
             }
 
@@ -219,6 +215,7 @@ impl UnifyOne<'unify> {
     }
 }
 
+#[allow(unused)]
 fn occurs(type_var: TypeVar, ty: &InferType) -> bool {
     match ty {
         InferType::Function(params, ret) => {
@@ -237,10 +234,7 @@ fn occurs(type_var: TypeVar, ty: &InferType) -> bool {
 mod tests {
     use super::{Substitution, UnifyTable};
     use crate::infer::constraint::{Constraint, Constraints};
-    use crate::ir::annotated::TypeVar;
     use crate::ir::InferType;
-    use crate::Type;
-    use std::collections::BTreeMap;
 
     fn types() -> UnifyTable {
         UnifyTable::new()
@@ -248,7 +242,7 @@ mod tests {
 
     #[test]
     fn unifies_two_ints() {
-        pretty_env_logger::try_init();
+        crate::init_logger();
 
         let substitution =
             types().unify(Constraints(Constraint(InferType::i32(), InferType::i32())));
@@ -258,7 +252,7 @@ mod tests {
 
     #[test]
     fn unifies_two_bools() {
-        pretty_env_logger::try_init();
+        crate::init_logger();
 
         let substitution = types().unify(Constraints(Constraint(
             InferType::bool(),
@@ -270,7 +264,7 @@ mod tests {
 
     #[test]
     fn unifies_two_functions() {
-        pretty_env_logger::try_init();
+        crate::init_logger();
 
         let substitution = types().unify(Constraints(Constraint(
             InferType::variable_function(vec![InferType::bool()], InferType::bool()),
@@ -281,37 +275,22 @@ mod tests {
     }
 
     #[test]
-    fn unifies_two_variables() {
-        pretty_env_logger::try_init();
-
-        let mut types = types();
-
-        let x = types.fresh();
-        let y = types.fresh();
-
-        let substitution = types.unify(Constraints(Constraint(x.clone(), y.clone())));
-        let expected = Substitution::empty(); // TODO: hmm
-
-        assert_eq!(substitution, Ok(expected));
-    }
-
-    #[test]
     fn unifies_variables_with_non_variables() {
-        pretty_env_logger::try_init();
+        crate::init_logger();
 
         let mut types = types();
 
         let x = types.fresh();
 
         let substitution = types.unify(Constraints(Constraint(x.clone(), InferType::i32())));
-        let expected = Substitution::from_pair(TypeVar::new(0), InferType::i32());
+        let expected = Substitution::from(&[(0, InferType::i32())]);
 
         assert_eq!(substitution, Ok(expected));
     }
 
     #[test]
     fn unifies_integer_literal() {
-        pretty_env_logger::try_init();
+        crate::init_logger();
 
         let mut types = types();
 
@@ -332,7 +311,7 @@ mod tests {
 
     #[test]
     fn unifies_variables_in_variable_functions() {
-        pretty_env_logger::try_init();
+        crate::init_logger();
 
         let mut types = types();
 
@@ -343,50 +322,6 @@ mod tests {
             InferType::variable_function(vec![t1.clone()], InferType::bool()),
             InferType::variable_function(vec![InferType::i32()], t2.clone()),
         )));
-
-        let expected = Substitution::from(&[(0, InferType::i32()), (1, InferType::bool())]);
-
-        assert_eq!(substitution, Ok(expected));
-    }
-
-    #[test]
-    fn unifies_variables_in_functions() {
-        pretty_env_logger::try_init();
-
-        let mut types = types();
-
-        let t0 = types.fresh();
-        let t1 = types.fresh();
-        let t2 = types.fresh();
-        let t3 = types.fresh();
-
-        // Given:
-        // <T0> param1
-        // <T1> ret
-        // <T2> = ?
-        // <T3> = ?
-        //
-        // <T2> = <T3>
-        // <T2> = (<T0>) -> bool
-        // <T3> = (i32) -> <T1>
-
-        // Expected:
-        // <T0> = i32
-        // <T1> = bool
-        // <T2> = (i32) -> bool
-        // <T3> = (i32) -> bool
-
-        let constraints = Constraint(t2.clone(), t3.clone())
-            + Constraint(
-                t2.clone(),
-                InferType::variable_function(vec![t0.clone()], InferType::bool()),
-            )
-            + Constraint(
-                t3.clone(),
-                InferType::variable_function(vec![InferType::i32()], t1.clone()),
-            );
-
-        let substitution = types.unify(constraints);
 
         let expected = Substitution::from(&[(0, InferType::i32()), (1, InferType::bool())]);
 

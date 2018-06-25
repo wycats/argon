@@ -1,7 +1,5 @@
 use super::resolved;
-use crate::{
-    ast, FunctionModifiers, FunctionType, MathOperator, MathType, Spanned, Type, UnifyTable,
-};
+use crate::{ast, FunctionModifiers, MathOperator, MathType, Spanned, Type, UnifyTable};
 use itertools::Itertools;
 use std::fmt;
 
@@ -60,10 +58,6 @@ impl ConstrainedType {
             },
         }
     }
-
-    crate fn unify(&self, other: &Type) -> Option<InferType> {
-        None
-    }
 }
 
 #[derive(Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
@@ -105,24 +99,8 @@ impl InferType {
         }
     }
 
-    crate fn is_resolved(&self) -> bool {
-        match self {
-            InferType::Resolved(..) => true,
-            _ => false,
-        }
-    }
-
     crate fn annotate<T>(self, item: T) -> Annotated<T> {
         Annotated { ty: self, item }
-    }
-
-    crate fn function(params: Vec<Type>, ret: Type) -> InferType {
-        InferType::Function(params, ret)
-    }
-
-    #[cfg(test)]
-    crate fn var(var: usize) -> InferType {
-        InferType::Variable(TypeVar { var })
     }
 
     crate fn variable_function(params: Vec<InferType>, ret: InferType) -> InferType {
@@ -137,28 +115,19 @@ impl InferType {
         InferType::Constrained(ConstrainedType::Float)
     }
 
+    crate fn bool() -> InferType {
+        InferType::Resolved(Type::bool())
+    }
+}
+
+#[cfg(test)]
+impl InferType {
     crate fn i32() -> InferType {
         InferType::Resolved(Type::i32())
     }
 
     crate fn i64() -> InferType {
         InferType::Resolved(Type::i64())
-    }
-
-    crate fn u32() -> InferType {
-        InferType::Resolved(Type::u32())
-    }
-
-    crate fn u64() -> InferType {
-        InferType::Resolved(Type::u64())
-    }
-
-    crate fn f32() -> InferType {
-        InferType::Resolved(Type::f32())
-    }
-
-    crate fn bool() -> InferType {
-        InferType::Resolved(Type::bool())
     }
 }
 
@@ -173,12 +142,6 @@ impl<T> std::ops::Deref for Annotated<T> {
 
     fn deref(&self) -> &T {
         &self.item
-    }
-}
-
-impl<T> Annotated<T> {
-    crate fn new(ty: InferType, item: T) -> Annotated<T> {
-        Annotated { ty, item }
     }
 }
 
@@ -276,6 +239,8 @@ impl Block {
 crate enum Expression {
     Const(ast::ConstExpression),
     VariableAccess(u32),
+
+    #[allow(unused)]
     Apply(Box<Annotated<Expression>>, Vec<Annotated<Expression>>),
     Binary {
         operator: MathOperator,
@@ -287,7 +252,7 @@ crate enum Expression {
 impl Expression {
     #[cfg(test)]
     crate fn integer(value: i32) -> Expression {
-        Expression::Const(ast::ConstExpression::Integer(value as i64))
+        Expression::Const(ast::ConstExpression::Integer(value))
     }
 
     #[cfg(test)]
@@ -320,13 +285,6 @@ impl Annotated<Expression> {
         Annotated {
             ty,
             item: Expression::VariableAccess(term),
-        }
-    }
-
-    crate fn function(ty: InferType, params: Vec<Type>, ret: Type) -> Annotated<FunctionType> {
-        Annotated {
-            ty,
-            item: FunctionType(params, ret),
         }
     }
 

@@ -21,8 +21,8 @@ pub fn invoke(
         .unwrap()
 }
 
+#[allow(unused, unused_must_use)]
 crate fn init_logger() {
-    #![allow(unused_must_use)]
     pretty_env_logger::try_init();
 }
 
@@ -204,6 +204,18 @@ binary_operator!(add | 100 + 50 = 150);
 binary_operator!(sub | 100 - 50 = 50);
 binary_operator!(mul | 10 * 11 = 110);
 binary_operator!(div | 100 / 5 = 20);
+
+syntax!(f32_literal {
+    module "export def add_float(x: f32) -> f32 { x + 10.6 }";
+
+    invoke add_float(5.0f32) = 15.6f32
+});
+
+syntax!(f64_literal {
+    module "export def add_float(x: f64) -> f64 { x + 10.6 }";
+
+    invoke add_float(5.0f64) = { 5.0f64 + 10.6f64 }
+});
 
 syntax!(right_times {
     module "export def multi(x: i32, y: i32) -> i32 { x + y * 5 }";

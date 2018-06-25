@@ -1,8 +1,4 @@
 use super::constraint::Constraint;
-use super::substitution::Substitution;
-use crate::ir::annotated::{self, Annotated};
-use crate::ir::InferType;
-use crate::CompileError;
 use std::collections::BTreeSet;
 use std::ops::{Add, AddAssign};
 
@@ -32,18 +28,6 @@ impl Constraints {
         Constraints {
             constraints: BTreeSet::new(),
         }
-    }
-
-    crate fn is_empty(&self) -> bool {
-        self.constraints.is_empty()
-    }
-
-    crate fn take_head(self) -> (Constraint, Constraints) {
-        let mut constraints = self.constraints.into_iter();
-        let head = constraints.next().unwrap();
-        let tail = constraints.collect();
-
-        (head, Constraints { constraints: tail })
     }
 }
 
