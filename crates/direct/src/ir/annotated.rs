@@ -1,4 +1,4 @@
-use super::{resolved, typed};
+use super::resolved;
 use crate::{
     ast, FunctionModifiers, FunctionType, MathOperator, MathType, Spanned, Type, UnifyTable,
 };
@@ -53,11 +53,7 @@ impl ConstrainedType {
         };
 
         match self {
-            ConstrainedType::Integer => match ty {
-                MathType::I32 | MathType::I64 | MathType::U32 | MathType::U64 => true,
-                _ => false,
-            },
-
+            ConstrainedType::Integer => true,
             ConstrainedType::Float => match ty {
                 MathType::F32 | MathType::F64 => true,
                 _ => false,
@@ -263,6 +259,15 @@ impl Block {
         Annotated {
             item: Block { expressions },
             ty: vars.fresh(),
+        }
+    }
+}
+
+impl Block {
+    crate fn last_ty(&self) -> InferType {
+        match self.expressions.last() {
+            None => InferType::Resolved(Type::Void),
+            Some(e) => e.ty.clone(),
         }
     }
 }

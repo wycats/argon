@@ -84,6 +84,7 @@ impl UnifyTable {
 
     crate fn fresh(&mut self) -> InferType {
         let next = self.table.len();
+        trace!(target: "wasm::unify", "Generating <T{}>", next);
         let ty = InferType::Variable(TypeVar::new(next));
         let key = self.table.new_key(ty.clone());
         self.keys.insert(key);

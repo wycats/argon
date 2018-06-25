@@ -1,6 +1,6 @@
 use super::constraint::{Constraint, Constraints};
 use crate::annotated::{self, Annotated, TypeVar};
-use crate::ir::{typed, InferType};
+use crate::ir::InferType;
 use crate::shared::Type;
 use crate::{ast, shared};
 use std::collections::{BTreeMap, BTreeSet};
@@ -71,29 +71,21 @@ impl Substitution {
             params,
             symbols,
             ret,
-            body: self.apply_block(body.item),
+            body: self.apply_block(body),
             modifiers,
         }
     }
 
-    crate fn apply_block(
-        &self,
-        annotated::Block { expressions }: annotated::Block,
-    ) -> Annotated<annotated::Block> {
+    crate fn apply_block(&self, block: Annotated<annotated::Block>) -> Annotated<annotated::Block> {
         let mut exprs: Vec<Annotated<annotated::Expression>> = vec![];
 
-        for expr in expressions {
+        for expr in block.item.expressions {
             exprs.push(self.apply_expr(expr));
         }
 
-        let last_ty = match exprs.last() {
-            None => InferType::Resolved(Type::Void),
-            Some(e) => e.ty.clone(),
-        };
-
         Annotated {
             item: annotated::Block { expressions: exprs },
-            ty: last_ty,
+            ty: self.apply_ty(block.ty),
         }
     }
 
@@ -117,14 +109,6 @@ impl Substitution {
                 rhs: box self.apply_expr(rhs),
             }.annotate(ty),
         }
-    }
-
-    crate fn apply_const(
-        &self,
-        constant: ast::ConstExpression,
-        ty: Type,
-    ) -> typed::TypedExpression {
-        constant.into_typed_expression(ty)
     }
 
     crate fn apply_ty(&self, ty: InferType) -> InferType {

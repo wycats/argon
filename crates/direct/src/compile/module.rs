@@ -2,7 +2,7 @@ use crate::compile::math::{binary_op_type, math_op, BinaryType};
 use crate::infer::constraint::CollectConstraints;
 use crate::infer::unify::UnifyTable;
 use crate::ir::annotated::Annotated;
-use crate::ir::{annotated, typed, CompileError, ConstExpression, Type};
+use crate::ir::{annotated, CompileError, ConstExpression, Type};
 use crate::MathType;
 use crate::{ast, resolved, InferType};
 use parity_wasm::{builder, elements};
@@ -136,8 +136,10 @@ fn compile_const(constant: &ast::ConstExpression, ty: &InferType) -> elements::O
                 elements::Opcode::I64Const(unsafe { transmute(constant.to_i32() as i64) })
             }
 
-            MathType::F32 => unimplemented!(),
-            MathType::F64 => unimplemented!(),
+            MathType::F32 => elements::Opcode::F32Const(unsafe { transmute(constant.to_f32()) }),
+            MathType::F64 => {
+                elements::Opcode::F64Const(unsafe { transmute(constant.to_f32() as f64) })
+            }
         },
 
         other => panic!(

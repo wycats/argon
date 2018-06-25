@@ -1,7 +1,7 @@
 use crate::compile::math::{f64_to_f32, MathOperator, MathType};
 use crate::ir::shared;
-use crate::ir::{typed, FunctionModifiers, Spanned, Type};
-use nan_preserving_float::F64;
+use crate::ir::{FunctionModifiers, Spanned, Type};
+use nan_preserving_float::F32;
 use std::collections::BTreeMap;
 use std::fmt;
 
@@ -155,15 +155,15 @@ impl fmt::Debug for Block<'input> {
 #[derive(PartialEq, Copy, Clone)]
 pub enum ConstExpression {
     Integer(i32),
-    Float(F64),
+    Float(F32),
     Bool(bool),
 }
 
-fn is_float_int(float: F64) -> bool {
+fn is_float_int(float: F32) -> bool {
     float.to_float().floor() == float.to_float()
 }
 
-fn is_float_uint(float: F64) -> bool {
+fn is_float_uint(float: F32) -> bool {
     float.to_float().floor() == float.to_float() && float.to_float() >= 0.0
 }
 
@@ -182,48 +182,17 @@ impl ConstExpression {
             ConstExpression::Integer(int) if *int >= 0 => *int as u32,
             ConstExpression::Float(float) if is_float_uint(*float) => float.to_float() as u32,
 
-            _ => panic!("Cannot convert {:?} to an integer"),
+            _ => panic!("Cannot convert {:?} to an unsigned integer"),
         }
     }
 
-    crate fn into_typed_expression(self, ty: Type) -> typed::TypedExpression {
-        let expr = match self {
-            ConstExpression::Integer(integer) => match ty {
-                Type::Math(MathType::I32) => {
-                    typed::Expression::Const(shared::ConstExpression::I32(integer as i32))
-                }
+    crate fn to_f32(&self) -> f32 {
+        match self {
+            ConstExpression::Integer(int) if *int >= 0 => *int as f32,
+            ConstExpression::Float(float) => float.to_float(),
 
-                Type::Math(MathType::I64) => {
-                    typed::Expression::Const(shared::ConstExpression::I64(integer as i64))
-                }
-
-                Type::Math(MathType::U32) => {
-                    typed::Expression::Const(shared::ConstExpression::U32(integer as u32))
-                }
-
-                Type::Math(MathType::U64) => {
-                    typed::Expression::Const(shared::ConstExpression::U64(integer as u64))
-                }
-
-                other => panic!("BUG: Cannot convert an integer into {:?} (should have been eliminated by type inference)", other)
-            },
-
-            ConstExpression::Float(float) => match ty {
-                Type::Math(MathType::F32) => {
-                    typed::Expression::Const(shared::ConstExpression::F32(f64_to_f32(float)))
-                }
-
-                Type::Math(MathType::F64) => {
-                    typed::Expression::Const(shared::ConstExpression::F64(float))
-                }
-
-                other => panic!("BUG: Cannot convert a float into {:?} (should have been eliminated by type inference)", other)
-            }
-
-            ConstExpression::Bool(bool) => panic!("unimplemented bool")
-        };
-
-        typed::TypedExpression::new(expr, ty)
+            _ => panic!("Cannot convert {:?} to a float"),
+        }
     }
 }
 

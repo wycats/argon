@@ -53,7 +53,9 @@ impl CollectConstraints for annotated::Function<'input> {
 
 impl CollectConstraints for Annotated<annotated::Block> {
     fn constraints(&self) -> Constraints {
-        self.item.expressions.constraints()
+        let Annotated { ty, item } = self;
+
+        item.expressions.constraints() + Constraint(item.last_ty(), ty.clone())
     }
 }
 
