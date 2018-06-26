@@ -1,13 +1,15 @@
 #![allow(rust_2018_idioms)]
+#![cfg_attr(feature = "cargo-clippy", allow(clippy))]
 
 use crate::ast;
 use crate::ast::*;
 use crate::ir::*;
 use crate::MathOperator;
+use crate::lexer::Tok;
 use std::str::FromStr;
 use nan_preserving_float::F64;
 
-grammar;
+grammar<'input>;
 
 Spanned<Rule>: Spanned<Rule> =
     <l:@L> <rule:Rule> <r:@R> => rule.spanned(l, r);
@@ -71,15 +73,43 @@ Expression3: Expression<'input> = {
 }
 
 Identifier: Identifier<'input> = <id: Spanned<RawIdentifier>> => id;
-RawIdentifier: RawIdentifier<'input> = <id: r"[a-zA-Z_][a-zA-Z0-9_]*"> => ident(id);
+RawIdentifier: RawIdentifier<'input> = <id: "Id"> => ident(id);
 
-I32: Expression<'input> = <r"[0-9]+"> => Expression::Const(ast::ConstExpression::Integer(FromStr::from_str(<>).unwrap()));
-F64: Expression<'input> = <r"[0-9]+.[0-9]+"> => Expression::Const(ast::ConstExpression::Float(F64::from_float(FromStr::from_str(<>).unwrap())));
+I32: Expression<'input> = <"Int"> => Expression::Const(ast::ConstExpression::Integer(<>));
+F64: Expression<'input> = <"Float"> => Expression::Const(ast::ConstExpression::Float(<>));
 
-match {
-    r"[0-9]+.[0-9]+"
-} else {
-    r"[0-9]+"
-} else {
-    _
+extern {
+    type Location = usize;
+    type Error = crate::lexer::LexicalError;
+
+    enum Tok<'input> {
+        "export" => Tok::Export,
+        "def" => Tok::Def,
+
+        "->" => Tok::Arrow,
+        "(" => Tok::OpenParen,
+        ")" => Tok::CloseParen,
+        "{" => Tok::OpenBrace,
+        "}" => Tok::CloseBrace,
+        ":" => Tok::Colon,
+        "," => Tok::Comma,
+
+        "i32" => Tok::I32,
+        "i64" => Tok::I64,
+        "u32" => Tok::U32,
+        "u64" => Tok::U64,
+        "f32" => Tok::F32,
+        "f64" => Tok::F64,
+
+        "*" => Tok::Mul,
+        "/" => Tok::Div,
+        "+" => Tok::Add,
+        "-" => Tok::Sub,
+
+        "Id" => Tok::Id(<&'input str>),
+        "Int" => Tok::Int(<i32>),
+        "Float" => Tok::Float(<F64>),
+
+        "WS" => Tok::WS(<&'input str>),
+    }
 }

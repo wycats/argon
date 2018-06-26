@@ -1,5 +1,5 @@
 use super::function::compile_function;
-use crate::infer::unify::UnifyTable;
+use crate::infer::UnifyTable;
 use crate::ir::{annotated, CompileError};
 use crate::{ast, resolved};
 use parity_wasm::{builder, elements};

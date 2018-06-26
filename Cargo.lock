@@ -668,6 +668,7 @@ dependencies = [
  "parity-wasm 0.27.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "pretty_env_logger 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "regex 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "unicode-xid 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "wasmi 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 

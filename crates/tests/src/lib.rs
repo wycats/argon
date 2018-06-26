@@ -1,10 +1,9 @@
 use parity_wasm::elements;
 use wasmi;
-use wasm::Token;
+use wasm::lexer::Tok;
+use wasm::ParseError;
 
 crate mod coerce;
-
-pub type ParseError<'input> = lalrpop_util::ParseError<usize, Token<'input>, &'static str>;
 
 pub fn invoke(
     module: &elements::Module,

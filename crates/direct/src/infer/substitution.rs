@@ -3,6 +3,9 @@ use crate::ir::InferType;
 use std::collections::BTreeMap;
 use std::fmt;
 
+#[cfg(test)]
+mod test_helpers;
+
 #[derive(Eq, PartialEq)]
 crate struct Substitution {
     solutions: BTreeMap<TypeVar, InferType>,
@@ -13,17 +16,6 @@ impl Substitution {
         Substitution {
             solutions: BTreeMap::new(),
         }
-    }
-
-    #[cfg(test)]
-    crate fn from(tuples: impl AsRef<[(usize, InferType)]>) -> Substitution {
-        let mut map = BTreeMap::new();
-
-        for (var, ty) in tuples.as_ref() {
-            map.insert(TypeVar::new(*var), ty.clone());
-        }
-
-        Substitution { solutions: map }
     }
 
     crate fn set(&mut self, key: TypeVar, ty: InferType) {

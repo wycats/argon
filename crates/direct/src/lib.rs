@@ -17,6 +17,7 @@ extern crate log;
 pub mod compile;
 crate mod infer;
 pub mod ir;
+pub mod lexer;
 pub mod parser;
 
 pub mod test_helpers;
@@ -24,8 +25,9 @@ pub mod test_helpers;
 lalrpop_mod!(pub grammar);
 
 pub use self::compile::*;
-pub use self::grammar::{ModuleParser, Token};
+pub use self::grammar::ModuleParser;
 pub use self::ir::*;
+pub use self::parser::ParseError;
 
 pub use self::test_helpers::AstBuilder;
 
