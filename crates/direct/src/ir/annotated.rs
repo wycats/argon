@@ -1,4 +1,5 @@
 use super::resolved;
+use crate::infer::{Constraint, Constraints};
 use crate::{ast, FunctionModifiers, MathOperator, MathType, Spanned, Type, UnifyTable};
 use itertools::Itertools;
 use std::fmt;
@@ -99,6 +100,13 @@ impl InferType {
         }
     }
 
+    crate fn as_math(&self) -> MathType {
+        match self {
+            InferType::Resolved(Type::Math(ty)) => *ty,
+            other => panic!("Cannot convert a {:?} into a MathType", other),
+        }
+    }
+
     crate fn annotate<T>(self, item: T) -> Annotated<T> {
         Annotated { ty: self, item }
     }
@@ -162,6 +170,16 @@ impl Module<'input> {
 
         Module { funcs }
     }
+
+    crate fn constraints(&self) -> Constraints {
+        let mut constraints = Constraints::empty();
+
+        for function in &self.funcs {
+            constraints += function.constraints();
+        }
+
+        constraints
+    }
 }
 
 #[derive(Debug)]
@@ -200,6 +218,10 @@ impl Function<'input> {
             modifiers,
         }
     }
+
+    crate fn constraints(&self) -> Constraints {
+        self.body.constraints()
+    }
 }
 
 #[derive(Debug)]
@@ -235,6 +257,20 @@ impl Block {
     }
 }
 
+impl Annotated<Block> {
+    crate fn constraints(&self) -> Constraints {
+        let Annotated { ty, item } = self;
+
+        let mut constraints = Constraints::empty() + Constraint(item.last_ty(), ty.clone());
+
+        for expression in &item.expressions {
+            constraints += expression.constraints();
+        }
+
+        constraints
+    }
+}
+
 #[derive(Debug)]
 crate enum Expression {
     Const(ast::ConstExpression),
@@ -262,6 +298,54 @@ impl Expression {
 
     crate fn annotate(self, ty: InferType) -> Annotated<Expression> {
         Annotated { item: self, ty }
+    }
+}
+
+impl Annotated<Expression> {
+    crate fn constraints(&self) -> Constraints {
+        let Annotated { ty, item } = self;
+
+        match item {
+            Expression::Apply(function, args) => {
+                let mut arg_constraints = Constraints::empty();
+
+                for arg in args {
+                    arg_constraints += arg.constraints();
+                }
+
+                let args = args.iter().map(|a| a.ty.clone()).collect();
+
+                function.constraints() + arg_constraints
+                    + Constraints(Constraint(
+                        function.ty.clone(),
+                        InferType::variable_function(args, ty.clone()),
+                    ))
+            }
+            Expression::Const(constant) => match constant {
+                ast::ConstExpression::Bool(..) => {
+                    Constraints(Constraint::new(ty.clone(), InferType::bool()))
+                }
+
+                ast::ConstExpression::Integer(..) => {
+                    Constraints(Constraint::new(ty.clone(), InferType::integer()))
+                }
+
+                ast::ConstExpression::Float(..) => {
+                    Constraints(Constraint::new(ty.clone(), InferType::float()))
+                }
+            },
+            Expression::VariableAccess(_) => Constraints::empty(),
+            Expression::Binary {
+                operator: _,
+                lhs: box lhs,
+                rhs: box rhs,
+            } => {
+                lhs.constraints()
+                    + rhs.constraints()
+                    + Constraints(Constraint(ty.clone(), lhs.ty.clone()))
+                    + Constraints(Constraint(ty.clone(), rhs.ty.clone()))
+            }
+        }
     }
 }
 

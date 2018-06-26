@@ -1,7 +1,6 @@
-use crate::ir::Type;
-use crate::InferType;
+mod debug;
+
 use parity_wasm::elements::{self, Opcode};
-use std::fmt;
 
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub enum MathType {
@@ -11,35 +10,6 @@ pub enum MathType {
     U64,
     F32,
     F64,
-}
-
-impl fmt::Debug for MathType {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            MathType::I32 => write!(f, "i32"),
-            MathType::I64 => write!(f, "i64"),
-            MathType::U32 => write!(f, "u32"),
-            MathType::U64 => write!(f, "u64"),
-            MathType::F32 => write!(f, "f32"),
-            MathType::F64 => write!(f, "f64"),
-        }
-    }
-}
-
-#[derive(Debug)]
-crate enum BinaryType {
-    Same(MathType),
-    Incompatible(Type, Type),
-}
-
-crate fn binary_op_type(lhs: InferType, rhs: InferType) -> BinaryType {
-    let lhs = lhs.into_type();
-    let rhs = rhs.into_type();
-
-    match (lhs, rhs) {
-        (Type::Math(lhs), Type::Math(rhs)) if lhs == rhs => BinaryType::Same(lhs),
-        (left, right) => BinaryType::Incompatible(left, right),
-    }
 }
 
 #[derive(Copy, Clone, Eq, PartialEq)]
@@ -54,25 +24,6 @@ pub enum MathOperator {
     Xor,
     ShiftLeft,
     ShiftRight,
-}
-
-impl fmt::Debug for MathOperator {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let operator = match self {
-            MathOperator::Add => "+",
-            MathOperator::Sub => "-",
-            MathOperator::Mul => "*",
-            MathOperator::Div => "/",
-            MathOperator::Rem => "%",
-            MathOperator::And => "&",
-            MathOperator::Or => "|",
-            MathOperator::Xor => "^",
-            MathOperator::ShiftLeft => "<<",
-            MathOperator::ShiftRight => ">>",
-        };
-
-        write!(f, "{}", operator)
-    }
 }
 
 crate fn math_op(operator: MathOperator, ty: MathType) -> elements::Opcode {

@@ -1,6 +1,4 @@
 crate use super::constraint_set::Constraints;
-use crate::ast;
-use crate::ir::annotated::{self, Annotated};
 use crate::ir::InferType;
 
 #[derive(Debug, Hash, Eq, PartialEq, Ord, PartialOrd)]
@@ -28,99 +26,9 @@ crate fn Constraint(left: InferType, right: InferType) -> Constraint {
     Constraint { left, right }
 }
 
-crate trait CollectConstraints {
-    fn constraints(&self) -> Constraints;
-}
-
-impl CollectConstraints for annotated::Module<'input> {
-    fn constraints(&self) -> Constraints {
-        let mut constraints = Constraints::empty();
-
-        for function in &self.funcs {
-            constraints += function.constraints();
-        }
-
-        constraints
-    }
-}
-
-impl CollectConstraints for annotated::Function<'input> {
-    fn constraints(&self) -> Constraints {
-        self.body.constraints()
-    }
-}
-
-impl CollectConstraints for Annotated<annotated::Block> {
-    fn constraints(&self) -> Constraints {
-        let Annotated { ty, item } = self;
-
-        item.expressions.constraints() + Constraint(item.last_ty(), ty.clone())
-    }
-}
-
-impl CollectConstraints for Vec<Annotated<annotated::Expression>> {
-    fn constraints(&self) -> Constraints {
-        let mut constraints = Constraints::empty();
-
-        for expression in self {
-            constraints += expression.constraints();
-        }
-
-        constraints
-    }
-}
-
-impl CollectConstraints for Annotated<annotated::Expression> {
-    fn constraints(&self) -> Constraints {
-        let Annotated { ty, item } = self;
-
-        match item {
-            annotated::Expression::Apply(function, args) => {
-                let mut arg_constraints = Constraints::empty();
-
-                for arg in args {
-                    arg_constraints += arg.constraints();
-                }
-
-                let args = args.iter().map(|a| a.ty.clone()).collect();
-
-                function.constraints() + arg_constraints
-                    + Constraints(Constraint(
-                        function.ty.clone(),
-                        InferType::variable_function(args, ty.clone()),
-                    ))
-            }
-            annotated::Expression::Const(constant) => match constant {
-                ast::ConstExpression::Bool(..) => {
-                    Constraints(Constraint::new(ty.clone(), InferType::bool()))
-                }
-
-                ast::ConstExpression::Integer(..) => {
-                    Constraints(Constraint::new(ty.clone(), InferType::integer()))
-                }
-
-                ast::ConstExpression::Float(..) => {
-                    Constraints(Constraint::new(ty.clone(), InferType::float()))
-                }
-            },
-            annotated::Expression::VariableAccess(_) => Constraints::empty(),
-            annotated::Expression::Binary {
-                operator: _,
-                lhs: box lhs,
-                rhs: box rhs,
-            } => {
-                lhs.constraints()
-                    + rhs.constraints()
-                    + Constraints(Constraint(ty.clone(), lhs.ty.clone()))
-                    + Constraints(Constraint(ty.clone(), rhs.ty.clone()))
-            }
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
-    use super::{CollectConstraints, Constraint, Constraints};
+    use super::{Constraint, Constraints};
     use crate::ir::annotated::{Annotated, Expression};
     use crate::ir::InferType as Type;
     use crate::UnifyTable;
