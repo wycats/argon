@@ -44,7 +44,7 @@ pub enum ConstrainedType {
 }
 
 impl ConstrainedType {
-    crate fn unifies(&self, other: &Type) -> bool {
+    crate fn unifies_ty(&self, other: &Type) -> bool {
         let ty = match other {
             Type::Math(math) => math,
             _ => return false,

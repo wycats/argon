@@ -31,38 +31,8 @@ impl UnifyValue for InferType {
                 Ok(lhs.clone())
             }
 
-            (left @ InferType::Variable(..), InferType::Variable(..)) => Ok(left.clone()),
-
-            (InferType::Variable(..), other) => Ok(other.clone()),
-            (other, InferType::Variable(..)) => Ok(other.clone()),
-
-            (InferType::Resolved(resolved), InferType::Constrained(constrained))
-                if constrained.unifies(resolved) =>
-            {
-                Ok(InferType::Resolved(resolved.clone()))
-            }
-
-            (c @ InferType::Constrained(..), r @ InferType::Resolved(..)) => {
-                UnifyValue::unify_values(r, c)
-            }
-
-            (InferType::VariableFunction(..), f @ InferType::Function(..)) => Ok(f.clone()),
-            (f @ InferType::Function(..), InferType::VariableFunction(..)) => Ok(f.clone()),
-
-            (
-                InferType::VariableFunction(lparams, box lret),
-                InferType::VariableFunction(rparams, box rret),
-            ) => {
-                let mut params = vec![];
-
-                for (lparam, rparam) in lparams.iter().zip(rparams) {
-                    params.push(UnifyValue::unify_values(lparam, rparam)?);
-                }
-
-                let ret = UnifyValue::unify_values(lret, rret)?;
-
-                Ok(InferType::VariableFunction(params, box ret))
-            }
+            (InferType::Variable(..), other @ InferType::Resolved(..)) => Ok(other.clone()),
+            (other @ InferType::Resolved(..), InferType::Variable(..)) => Ok(other.clone()),
 
             _ => Err(CompileError::UnifyError(a.clone(), b.clone())),
         }
@@ -129,7 +99,7 @@ impl Unify {
             let mut unify = UnifyOne { table: &mut table };
 
             for constraint in &constraints {
-                unify.constraint((&constraint.left, &constraint.right))?;
+                unify.constrain(&constraint.left, &constraint.right)?;
             }
         }
 
@@ -149,7 +119,7 @@ struct UnifyOne<'unify> {
 }
 
 impl UnifyOne<'unify> {
-    fn constraint(&mut self, (left, right): (&InferType, &InferType)) -> Result<(), CompileError> {
+    fn constrain(&mut self, left: &InferType, right: &InferType) -> Result<(), CompileError> {
         trace!(target: "wasm::unify::one", "+constraint {:?} {:?}", left, right);
 
         match (left, right) {
@@ -159,24 +129,42 @@ impl UnifyOne<'unify> {
                 return Err(CompileError::Unimplemented)
             }
 
+            (InferType::Constrained(c), InferType::Resolved(r)) => {
+                if !c.unifies_ty(r) {
+                    return Err(CompileError::UnifyError(
+                        InferType::Constrained(c.clone()),
+                        InferType::Resolved(r.clone()),
+                    ));
+                };
+            }
+
+            (r @ InferType::Resolved(..), c @ InferType::Constrained(..)) => self.constrain(c, r)?,
+
+            (InferType::Constrained(..), InferType::Constrained(..)) => {
+                // float literals and int literals unify, but eventually we need a better
+                // intersection system
+            }
+
             (InferType::Variable(var), value @ InferType::Resolved(..)) => {
                 self.table.unify_var_value(*var, value.clone())?;
+                self.recurse_left(*var, value)?;
             }
 
             (value @ InferType::Resolved(..), var @ InferType::Variable(..)) => {
-                self.constraint((var, value))?;
+                self.constrain(var, value)?;
             }
 
             (InferType::Variable(left), InferType::Variable(right)) => {
                 self.table.unify_var_var(*left, *right)?;
+                self.recurse_both(*left, *right)?;
             }
 
             (InferType::Variable(left), constrained @ InferType::Constrained(..)) => {
-                self.table.unify_var_value(*left, constrained.clone())?;
+                self.recurse_left(*left, constrained)?;
             }
 
             (constrained @ InferType::Constrained(..), var @ InferType::Variable(..)) => {
-                self.constraint((var, constrained))?;
+                self.constrain(var, constrained)?;
             }
 
             (
@@ -184,26 +172,26 @@ impl UnifyOne<'unify> {
                 InferType::VariableFunction(rparams, rret),
             ) => {
                 for (left, right) in lparams.iter().zip(rparams) {
-                    self.constraint((left, right))?;
+                    self.constrain(left, right)?;
                 }
 
-                self.constraint((lret, rret))?;
+                self.constrain(lret, rret)?;
             }
 
             (InferType::Variable(left), f @ InferType::VariableFunction(..)) => {
-                self.table.unify_var_value(*left, f.clone())?;
+                self.recurse_left(*left, f)?;
             }
 
             (f @ InferType::VariableFunction(..), v @ InferType::Variable(..)) => {
-                self.constraint((v, f))?;
+                self.constrain(v, f)?;
             }
 
             (InferType::Variable(left), f @ InferType::Function(..)) => {
-                self.table.unify_var_value(*left, f.clone())?;
+                self.recurse_left(*left, f)?;
             }
 
             (f @ InferType::Function(..), v @ InferType::Variable(..)) => {
-                self.constraint((v, f))?;
+                self.constrain(v, f)?;
             }
 
             (left, right) => unimplemented!("unifying constraints {:?} and {:?}", left, right),
@@ -212,6 +200,27 @@ impl UnifyOne<'unify> {
         trace!(target: "wasm::unify", "-constraint table={:#?}", self.table);
 
         Ok(())
+    }
+
+    fn recurse_left(&mut self, var: TypeVar, ty: &InferType) -> Result<(), CompileError> {
+        let probed_left = self.table.probe_value(var);
+
+        if InferType::Variable(var) == probed_left {
+            return Ok(());
+        }
+
+        self.constrain(&probed_left, ty)
+    }
+
+    fn recurse_both(&mut self, left: TypeVar, right: TypeVar) -> Result<(), CompileError> {
+        let probed_left = self.table.probe_value(left);
+        let probed_right = self.table.probe_value(right);
+
+        if InferType::Variable(left) == probed_left && InferType::Variable(right) == probed_right {
+            return Ok(());
+        }
+
+        self.constrain(&probed_left, &probed_right)
     }
 }
 
