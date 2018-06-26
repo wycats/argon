@@ -7,7 +7,7 @@ use nan_preserving_float::F64;
 #[derive(Debug)]
 pub struct LexicalError {}
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub enum Tok<'input> {
     Export,
     Def,
@@ -32,20 +32,4 @@ pub enum Tok<'input> {
     Int(i32),
     Float(F64),
     WS(&'input str),
-}
-
-impl Tok<'input> {
-    crate fn to_int(&self) -> i32 {
-        match self {
-            Tok::Int(int) => *int,
-            _ => unreachable!(),
-        }
-    }
-
-    crate fn to_float(&self) -> F64 {
-        match self {
-            Tok::Float(float) => *float,
-            _ => unreachable!(),
-        }
-    }
 }

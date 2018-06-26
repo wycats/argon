@@ -6,7 +6,6 @@ use crate::ast::*;
 use crate::ir::*;
 use crate::MathOperator;
 use crate::lexer::Tok;
-use std::str::FromStr;
 use nan_preserving_float::F64;
 
 grammar<'input>;
@@ -80,7 +79,7 @@ F64: Expression<'input> = <"Float"> => Expression::Const(ast::ConstExpression::F
 
 extern {
     type Location = usize;
-    type Error = crate::lexer::LexicalError;
+    type Error = crate::CompileError;
 
     enum Tok<'input> {
         "export" => Tok::Export,

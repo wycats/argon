@@ -23,6 +23,7 @@ itertools = "0.7.8"
 log = "0.4.2"
 ena = "0.9.3"
 unicode-xid = "0.1.0"
+lazy_static = "1.0.1"
 
 [dev-dependencies]
 wasmi = "0.2.0"

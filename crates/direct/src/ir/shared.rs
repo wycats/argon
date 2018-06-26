@@ -11,6 +11,7 @@ pub enum CompileError {
     ResolveError(ResolveError),
     TypeError(TypeError),
     UnifyError(InferType, InferType),
+    LexError,
     Unimplemented,
 }
 

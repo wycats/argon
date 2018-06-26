@@ -1,7 +1,7 @@
-use crate::lexer::{Lexer, LexicalError, Tok};
-use crate::{ast, ModuleParser};
+use crate::lexer::{Lexer, Tok};
+use crate::{ast, CompileError, ModuleParser};
 
-pub type ParseError<'input> = lalrpop_util::ParseError<usize, Tok<'input>, LexicalError>;
+pub type ParseError<'input> = lalrpop_util::ParseError<usize, Tok<'input>, CompileError>;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum ErrorLocation {

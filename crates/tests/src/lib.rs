@@ -1,6 +1,5 @@
 use parity_wasm::elements;
 use wasmi;
-use wasm::lexer::Tok;
 use wasm::ParseError;
 
 crate mod coerce;
