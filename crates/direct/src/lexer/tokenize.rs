@@ -66,22 +66,39 @@ impl Lexer<'input> {
         );
     }
 
+    fn accumulate(&mut self, size: usize) {
+        self.consume(size);
+        self.token_size += size;
+    }
+
+    fn consume(&mut self, size: usize) {
+        self.pos += size;
+        self.rest = &self.rest[size..];
+    }
+
+    fn consume_token(&mut self) -> (usize, &'input str, usize) {
+        // slice off the accumulated token characters
+        let token = &self.token_start[..self.token_size];
+
+        // get the starting position
+        let start_pos = self.start_pos;
+        // and advance it to the current position
+        self.start_pos = self.pos;
+
+        // reset the token size
+        self.token_size = 0;
+
+        (start_pos, token, self.pos)
+    }
+
     fn finalize_current(
         &mut self,
         size: usize,
         next_state: LexerState,
     ) -> (usize, &'input str, usize) {
-        let token_size = self.token_size;
-        let start_pos = self.start_pos;
-        let end_pos = self.pos;
-
-        self.token_size = 0;
-        self.start_pos = self.pos;
-
-        let token = &self.token_start[..token_size];
-        self.rest = &self.rest[size..];
+        let (start_pos, token, end_pos) = self.consume_token();
+        self.consume(size);
         self.token_start = self.rest;
-        self.pos += size;
         self.state = next_state;
 
         self.trace("-");
@@ -119,44 +136,33 @@ impl Iterator for Lexer<'input> {
                     let start = self.start_pos;
                     let end = self.pos + size;
 
-                    self.rest = &self.rest[size..];
+                    self.consume(size);
                     self.token_start = self.rest;
-                    self.pos += size;
 
                     self.trace("-");
                     trace!(target: "wasm::tokenize", "-> token={:?}", token);
                     return Some(Ok((start, token, end)));
                 }
 
-                LexerNext::EmitCurrentId(size, next_state) => {
+                LexerNext::EmitCurrent(size, tok, next_state) => {
                     let (start, token, end) = self.finalize_current(size, next_state);
-                    return Some(Ok((start, Tok::Id(token), end)));
+                    return Some(Ok((start, tok(token), end)));
                 }
 
-                LexerNext::EmitCurrentWs(size, next_state) => {
+                LexerNext::FinalizeButDontEmitToken(size, next_state) => {
                     self.finalize_current(size, next_state);
                     // Parser doesn't handle WS tokens
                     // return Some((0, Tok::WS(token), 0));
                 }
 
-                LexerNext::EmitCurrentInt(size, next_state) => {
-                    let (start, token, end) = self.finalize_current(size, next_state);
-                    return Some(Ok((start, Tok::Int(token.parse().unwrap()), end)));
+                LexerNext::Continue(size) => {
+                    self.accumulate(size);
+
+                    self.trace("-");
                 }
 
-                LexerNext::EmitCurrentDecimal(size, next_state) => {
-                    let (start, token, end) = self.finalize_current(size, next_state);
-                    return Some(Ok((
-                        start,
-                        Tok::Float(F64::from_float(token.parse().unwrap())),
-                        end,
-                    )));
-                }
-
-                LexerNext::Transition(consume, state) => {
-                    self.pos += consume;
-                    self.token_size += consume;
-                    self.rest = &self.rest[consume..];
+                LexerNext::Transition(size, state) => {
+                    self.accumulate(size);
                     self.state = state;
 
                     self.trace("-");
@@ -166,7 +172,7 @@ impl Iterator for Lexer<'input> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq)]
 enum LexerState {
     Top,
     StartIdent,
@@ -179,42 +185,64 @@ enum LexerState {
 #[derive(Debug)]
 enum LexerNext<'input> {
     WholeToken(usize, Tok<'input>),
-    EmitCurrentId(usize, LexerState),
-    EmitCurrentWs(usize, LexerState),
-    EmitCurrentInt(usize, LexerState),
-    EmitCurrentDecimal(usize, LexerState),
+    FinalizeButDontEmitToken(usize, LexerState),
+    EmitCurrent(usize, fn(&'input str) -> Tok<'input>, LexerState),
     Transition(usize, LexerState),
+    Continue(usize),
     EOF,
 }
 
 impl LexerNext<'input> {
+    fn finalize_no_emit(next_state: LexerState) -> LexerNext<'input> {
+        LexerNext::FinalizeButDontEmitToken(1, next_state)
+    }
+
+    fn consume() -> LexerNext<'input> {
+        LexerNext::Continue(1)
+    }
+
+    fn emit<'i>(tok: fn(&'i str) -> Tok<'i>, next_state: LexerState) -> LexerNext<'i> {
+        LexerNext::EmitCurrent(1, tok, next_state)
+    }
+
+    fn transition_to(next_state: LexerState) -> LexerNext<'input> {
+        LexerNext::Transition(1, next_state)
+    }
+
+    fn reconsume(self) -> LexerNext<'input> {
+        match self {
+            LexerNext::WholeToken(_, tok) => LexerNext::WholeToken(0, tok),
+            LexerNext::FinalizeButDontEmitToken(_, tok) => {
+                LexerNext::FinalizeButDontEmitToken(0, tok)
+            }
+            LexerNext::EmitCurrent(_, tok, state) => LexerNext::EmitCurrent(0, tok, state),
+            LexerNext::Transition(_, state) => LexerNext::Transition(0, state),
+            LexerNext::Continue(_) => LexerNext::Continue(1),
+            LexerNext::EOF => LexerNext::EOF,
+        }
+    }
+}
+
+impl<'input> LexerNext<'input> {
     fn emit_token(t: Tok<'input>, size: usize) -> LexerNext<'input> {
         LexerNext::WholeToken(size, t)
     }
 
-    fn emit_current_id(consume: usize, next_state: LexerState) -> LexerNext<'input> {
-        LexerNext::EmitCurrentId(consume, next_state)
-    }
-
-    fn emit_current_ws(consume: usize, next_state: LexerState) -> LexerNext<'input> {
-        LexerNext::EmitCurrentWs(consume, next_state)
-    }
-
-    fn emit_current_int(consume: usize, next_state: LexerState) -> LexerNext<'input> {
-        LexerNext::EmitCurrentInt(consume, next_state)
-    }
-
-    fn emit_current_decimal(consume: usize, next_state: LexerState) -> LexerNext<'input> {
-        LexerNext::EmitCurrentDecimal(consume, next_state)
-    }
-
-    fn transition(consume: usize, state: LexerState) -> LexerNext<'input> {
-        LexerNext::Transition(consume, state)
+    fn emit_current(
+        size: usize,
+        tok: fn(&'input str) -> Tok<'input>,
+        next_state: LexerState,
+    ) -> LexerNext<'input> {
+        LexerNext::EmitCurrent(size, tok, next_state)
     }
 }
 
 impl LexerState {
-    fn next(&self, c: Option<char>, rest: &'input str) -> Result<LexerNext<'input>, CompileError> {
+    fn next<'input>(
+        &self,
+        c: Option<char>,
+        rest: &'input str,
+    ) -> Result<LexerNext<'input>, CompileError> {
         let out = match self {
             LexerState::Top => match c {
                 None => LexerNext::EOF,
@@ -222,11 +250,11 @@ impl LexerState {
                     if let Some((tok, size)) = MATCHERS.match_keyword(rest) {
                         LexerNext::emit_token(tok, size)
                     } else if c.is_digit(10) {
-                        LexerNext::transition(0, LexerState::Integer)
+                        LexerNext::transition_to(LexerState::Integer).reconsume()
                     } else if c.is_whitespace() {
-                        LexerNext::transition(1, LexerState::Whitespace)
+                        LexerNext::transition_to(LexerState::Whitespace)
                     } else if UnicodeXID::is_xid_start(c) {
-                        LexerNext::transition(0, LexerState::StartIdent)
+                        LexerNext::transition_to(LexerState::StartIdent).reconsume()
                     } else {
                         return Err(CompileError::LexError);
                     }
@@ -237,55 +265,55 @@ impl LexerState {
                 None => LexerNext::EOF,
                 Some(c) => {
                     if c.is_whitespace() {
-                        LexerNext::transition(1, LexerState::Whitespace)
+                        LexerNext::consume()
                     } else {
-                        LexerNext::emit_current_ws(0, LexerState::Top)
+                        LexerNext::finalize_no_emit(LexerState::Top).reconsume()
                     }
                 }
             },
 
             LexerState::StartIdent => match c {
-                None => LexerNext::emit_current_id(0, LexerState::Top),
+                None => LexerNext::emit(Tok::Id, LexerState::Top).reconsume(),
                 Some(c) => {
                     if UnicodeXID::is_xid_continue(c) {
-                        LexerNext::transition(1, LexerState::ContinueIdent)
+                        LexerNext::transition_to(LexerState::ContinueIdent)
                     } else {
-                        LexerNext::emit_current_id(0, LexerState::Top)
+                        LexerNext::emit(Tok::Id, LexerState::Top).reconsume()
                     }
                 }
             },
 
             LexerState::ContinueIdent => match c {
-                None => LexerNext::emit_current_id(0, LexerState::Top),
+                None => LexerNext::emit(Tok::Id, LexerState::Top).reconsume(),
                 Some(c) => {
                     if UnicodeXID::is_xid_continue(c) {
-                        LexerNext::transition(1, LexerState::ContinueIdent)
+                        LexerNext::consume()
                     } else {
-                        LexerNext::emit_current_id(0, LexerState::Top)
+                        LexerNext::emit(Tok::Id, LexerState::Top).reconsume()
                     }
                 }
             },
 
             LexerState::Integer => match c {
-                None => LexerNext::emit_current_int(0, LexerState::Top),
+                None => LexerNext::emit_current(0, tk_int, LexerState::Top),
                 Some(c) => {
                     if c.is_digit(10) {
-                        LexerNext::transition(1, LexerState::Integer)
+                        LexerNext::consume()
                     } else if c == '.' {
-                        LexerNext::transition(1, LexerState::Decimal)
+                        LexerNext::transition_to(LexerState::Decimal)
                     } else {
-                        LexerNext::emit_current_int(0, LexerState::Top)
+                        LexerNext::emit(tk_int, LexerState::Top).reconsume()
                     }
                 }
             },
 
             LexerState::Decimal => match c {
-                None => LexerNext::emit_current_decimal(0, LexerState::Top),
+                None => LexerNext::emit_current(0, tk_float, LexerState::Top),
                 Some(c) => {
                     if c.is_digit(10) {
-                        LexerNext::transition(1, LexerState::Decimal)
+                        LexerNext::consume()
                     } else {
-                        LexerNext::emit_current_decimal(0, LexerState::Top)
+                        LexerNext::emit(tk_float, LexerState::Top).reconsume()
                     }
                 }
             },
@@ -293,6 +321,14 @@ impl LexerState {
 
         Ok(out)
     }
+}
+
+fn tk_int<'i>(token: &'i str) -> Tok<'i> {
+    Tok::Int(token.parse().unwrap())
+}
+
+fn tk_float<'i>(token: &'i str) -> Tok<'i> {
+    Tok::Float(F64::from_float(token.parse().unwrap()))
 }
 
 struct Matchers {
