@@ -1,6 +1,6 @@
 use parity_wasm::elements;
 use wasmi;
-use wasm::ParseError;
+use argon::ParseError;
 
 crate mod coerce;
 
@@ -45,11 +45,11 @@ macro_rules! syntax {
     ($mod_name:ident { module $syntax:expr; invoke $name:ident ($($args:expr),*) = $expected:tt }) => {
         #[allow(unused)]
         mod $mod_name {
-            use wasm::test_helpers::*;
+            use argon::test_helpers::*;
 
             use crate::invoke;
-            use wasm::{ast, compile_module, parser};
-            use wasm::ir::Type;
+            use argon::{ast, compile_module, parser};
+            use argon::ir::Type;
             use nan_preserving_float::{F32, F64};
 
             fn module() -> ast::Module<'static> {
@@ -71,11 +71,11 @@ macro_rules! syntax {
     ($mod_name:ident { module $syntax:expr; parse as |$module_builder:ident| $parse:expr; invoke $name:ident ($($args:expr),*) = $expected:tt }) => {
         #[allow(unused)]
         mod $mod_name {
-            use wasm::test_helpers::*;
+            use argon::test_helpers::*;
 
             use crate::invoke;
-            use wasm::{ast, compile_module, parser};
-            use wasm::ir::Type;
+            use argon::{ast, compile_module, parser};
+            use argon::ir::Type;
             use nan_preserving_float::{F32, F64};
 
             fn module() -> ast::Module<'static> {
@@ -110,8 +110,8 @@ macro_rules! compile_error {
     ($mod_name:ident { module $syntax:expr; error at $pos:expr }) => {
         #[allow(unused)]
         mod $mod_name {
-            use wasm::{ast, compile_module, parser};
-            use wasm::ir::{Type};
+            use argon::{ast, compile_module, parser};
+            use argon::ir::{Type};
             use nan_preserving_float::{F32, F64};
             use $crate::ParseError;
 

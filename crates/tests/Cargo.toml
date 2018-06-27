@@ -2,7 +2,7 @@ cargo-features = ["edition"]
 
 [package]
 
-name = "wasm-tests"
+name = "argon-tests"
 version = "1.0.0"
 edition = "2018"
 
@@ -14,5 +14,5 @@ lalrpop-util = { git = "https://github.com/wycats/lalrpop.git", branch = "module
 log = "0.4.2"
 pretty_env_logger = "0.2.3"
 
-[dependencies.wasm]
-path = "../direct"
+[dependencies.argon]
+path = "../argon"

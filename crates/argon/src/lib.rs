@@ -9,9 +9,6 @@
 extern crate derive_new;
 
 #[macro_use]
-extern crate lalrpop_util;
-
-#[macro_use]
 extern crate log;
 
 #[macro_use]
@@ -23,9 +20,8 @@ pub mod ir;
 pub mod lexer;
 pub mod parser;
 
+pub mod grammar;
 pub mod test_helpers;
-
-lalrpop_mod!(pub grammar);
 
 pub use self::compile::*;
 pub use self::grammar::ModuleParser;

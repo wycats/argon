@@ -1,0 +1,36 @@
+{
+  "name": "argon",
+  "displayName": "argon",
+  "description": "",
+  "version": "0.0.1",
+  "publisher": "wycats",
+  "engines": {
+    "vscode": "^1.24.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "argon",
+        "aliases": [
+          "Argon",
+          "argon"
+        ],
+        "extensions": [
+          ".argon",
+          ".agn"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "argon",
+        "scopeName": "source.argon",
+        "path": "./syntaxes/argon.tmLanguage"
+      }
+    ]
+  }
+}

@@ -1,11 +1,11 @@
 cargo-features = ["edition"]
 
 [package]
-name = "wasm-examples"
+name = "argon-examples"
 version = "1.0.0"
 
 [workspace]
-members = ["crates/direct", "crates/tests"]
+members = ["crates/argon", "crates/tests"]
 
 [dev-dependencies]
 wasmi = "0.2.0"
