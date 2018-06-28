@@ -3,9 +3,10 @@ cargo-features = ["edition"]
 [package]
 name = "argon-examples"
 version = "1.0.0"
+edition = "2018"
 
 [workspace]
-members = ["crates/argon", "crates/tests"]
+members = ["crates/argon", "crates/argon-utils", "crates/argon-package-bin", "crates/argon-package", "crates/tests"]
 
 [dev-dependencies]
 wasmi = "0.2.0"

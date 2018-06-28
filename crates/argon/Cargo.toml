@@ -4,6 +4,8 @@ cargo-features = ["edition"]
 name = "argon"
 version = "0.1.0"
 authors = ["Yehuda Katz <wycats@gmail.com>"]
+description = "Argon Language"
+license = "ISC"
 # build = "build.rs" # LALRPOP preprocessing
 edition = "2018"
 
@@ -30,5 +32,5 @@ wasmi = "0.2.0"
 pretty_env_logger = "0.2.3"
 
 # Add a build-time dependency on the lalrpop library:
-[build-dependencies]
-lalrpop =  { git = "https://github.com/wycats/lalrpop.git", branch = "module_attributes" }
+# [build-dependencies]
+# lalrpop =  { git = "https://github.com/wycats/lalrpop.git", branch = "module_attributes" }

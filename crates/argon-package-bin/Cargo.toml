@@ -1,0 +1,23 @@
+cargo-features = ["edition"]
+
+[package]
+name = "argon-package-bin"
+version = "0.1.0"
+authors = ["Yehuda Katz <wycats@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+argon = { path = "../argon" }
+clap = "2.32.0"
+indicatif = "0.9.0"
+console = "0.6.1"
+rand = "0.5.2"
+argon-package = { path = "../argon-package" }
+serde_derive = "1.0.67"
+indoc = "0.2.6"
+shellexpand = "1.0.0"
+failure = "0.1.1"
+derive-new = "0.5.4"
+
+[dev-dependencies]
+assert_cli = "0.6.1"

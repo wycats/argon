@@ -1,0 +1,7 @@
+cargo-features = ["edition"]
+
+[package]
+name = "argon-utils"
+version = "0.1.0"
+authors = ["Yehuda Katz <wycats@gmail.com>"]
+edition = "2018"
