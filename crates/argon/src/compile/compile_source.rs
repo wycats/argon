@@ -7,7 +7,7 @@ use std::io::Cursor;
 use std::path::Path;
 
 pub fn compile_source(
-    filename: &Path,
+    _filename: &Path,
     mut source: impl Read,
 ) -> Result<impl Read + std::fmt::Debug + 'static, Error> {
     let mut content = String::new();

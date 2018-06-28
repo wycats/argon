@@ -18,6 +18,8 @@ use crate::thor::{App, ClapApp, Subcommand};
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
 fn main() {
+    pretty_env_logger::init();
+
     let app = App::new("argon", Main, VERSION)
         .subcommand("read-manifest", commands::ReadManifest)
         .subcommand("build", commands::Build)

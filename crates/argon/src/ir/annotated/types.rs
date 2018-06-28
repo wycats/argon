@@ -131,4 +131,8 @@ impl InferType {
     crate fn i64() -> InferType {
         InferType::Resolved(Type::i64())
     }
+
+    crate fn f64() -> InferType {
+        InferType::Resolved(Type::f64())
+    }
 }

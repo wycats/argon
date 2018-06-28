@@ -33,6 +33,8 @@ impl UnifyValue for InferType {
             (InferType::Variable(..), other @ InferType::Resolved(..)) => Ok(other.clone()),
             (other @ InferType::Resolved(..), InferType::Variable(..)) => Ok(other.clone()),
 
+            (InferType::Variable(..), other @ InferType::Variable(..)) => Ok(other.clone()),
+
             _ => Err(CompileError::UnifyError(a.clone(), b.clone())),
         }
     }

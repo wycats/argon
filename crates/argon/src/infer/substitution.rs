@@ -101,17 +101,17 @@ impl Substitution {
     }
 }
 
-impl std::ops::Index<TypeVar> for Substitution {
+impl std::ops::Index<usize> for Substitution {
     type Output = InferType;
 
-    fn index(&self, key: TypeVar) -> &InferType {
-        self.solutions.get(&key).unwrap()
+    fn index(&self, key: usize) -> &InferType {
+        self.solutions.get(&TypeVar::new(key)).unwrap()
     }
 }
 
-impl std::ops::IndexMut<TypeVar> for Substitution {
-    fn index_mut(&mut self, key: TypeVar) -> &mut InferType {
-        self.solutions.get_mut(&key).unwrap()
+impl std::ops::IndexMut<usize> for Substitution {
+    fn index_mut(&mut self, key: usize) -> &mut InferType {
+        self.solutions.get_mut(&TypeVar::new(key)).unwrap()
     }
 }
 

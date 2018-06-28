@@ -265,4 +265,29 @@ mod tests {
 
         assert_eq!(substitution, Ok(expected));
     }
+
+    #[test]
+    fn unifies_multiple_variables_and_literals() {
+        crate::init_logger();
+
+        let mut types = types();
+
+        let t0 = types.fresh();
+        let t1 = types.fresh();
+        let t2 = types.fresh();
+        let t3 = types.fresh();
+
+        let constraints = Constraint(t0.clone(), t1.clone())
+            + Constraint(t0.clone(), t2.clone())
+            + Constraint(t0.clone(), t3.clone())
+            + Constraint(t1.clone(), InferType::f64())
+            + Constraint(t2.clone(), InferType::float());
+
+        let substitution = types.unify(constraints).unwrap();
+
+        assert_eq!(substitution[0], InferType::f64());
+        assert_eq!(substitution[1], InferType::f64());
+        assert_eq!(substitution[2], InferType::f64());
+        assert_eq!(substitution[3], InferType::f64());
+    }
 }
