@@ -96,7 +96,7 @@ struct ResolveFunction<'module> {
     func: &'module ast::Function<'module>,
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub enum ResolveError {}
 
 impl ResolveFunction<'module> {

@@ -9,8 +9,8 @@ pub enum ErrorLocation {
     Byte(usize),
 }
 
-pub fn parse(source: &'input str) -> Result<ast::Module<'input>, ParseError<'input>> {
-    ModuleParser::new().parse(Lexer::new(source))
+pub fn parse(source: &'input impl AsRef<str>) -> Result<ast::Module<'input>, ParseError<'input>> {
+    ModuleParser::new().parse(Lexer::new(source.as_ref()))
 }
 
 pub fn location(error: ParseError) -> ErrorLocation {

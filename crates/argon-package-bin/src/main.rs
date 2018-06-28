@@ -5,7 +5,8 @@ extern crate indoc;
 #[macro_use]
 extern crate derive_new;
 
-mod read_manifest;
+mod commands;
+
 #[cfg(test)]
 mod test;
 pub mod thor;
@@ -18,7 +19,8 @@ const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
 fn main() {
     let app = App::new("argon", Main, VERSION)
-        .subcommand("read-manifest", crate::read_manifest::ReadManifest)
+        .subcommand("read-manifest", commands::ReadManifest)
+        .subcommand("build", commands::Build)
         .arg(Arg::from_usage("--package -p 'directory of the package'").default_value("."))
         .arg(Arg::from_usage("--verbose -v 'verbose output'"));
 

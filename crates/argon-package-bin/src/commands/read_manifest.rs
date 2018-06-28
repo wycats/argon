@@ -17,7 +17,7 @@ impl Subcommand for ReadManifest {
     fn run(&self, matches: &thor::CommandMatches) -> Result<(), ThorError> {
         let package = matches.command.value_of("package").unwrap();
 
-        let manifest = read_manifest(package).with_context(|_| "readmanifest".to_string())?;
+        let details = read_manifest(package).with_context(|_| "readmanifest".to_string())?;
         let pretty = matches.command.is_present("pretty");
 
         let serialize = if pretty {
@@ -28,7 +28,7 @@ impl Subcommand for ReadManifest {
 
         println!(
             "{}",
-            serialize(&manifest).with_context(|_| format!("failed to serialize manifest"))?
+            serialize(&details.manifest).with_context(|_| format!("failed to serialize manifest"))?
         );
 
         Ok(())

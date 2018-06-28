@@ -1,10 +1,18 @@
+use std::path::Path;
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Project {
-    name: String,
-    license: String,
+    pub name: String,
+    pub license: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Manifest {
-    project: Project,
+    pub project: Project,
+}
+
+#[derive(Debug, Serialize)]
+pub struct PackageDetails {
+    pub manifest: Manifest,
+    pub root: Box<Path>,
 }

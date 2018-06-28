@@ -1,12 +1,13 @@
 use crate::compile::math::{MathOperator, MathType};
 use crate::ir::resolved::ResolveError;
 use crate::InferType;
+use failure::Fail;
 use itertools::Itertools;
 use nan_preserving_float::{F32, F64};
 use std::convert::From;
 use std::fmt;
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub enum CompileError {
     ResolveError(ResolveError),
     TypeError(TypeError),
@@ -15,7 +16,15 @@ pub enum CompileError {
     Unimplemented,
 }
 
-#[derive(Debug, Eq, PartialEq)]
+impl fmt::Display for CompileError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+impl Fail for CompileError {}
+
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub enum TypeError {
     MismatchedBinary(MathOperator, Type, Type),
 }

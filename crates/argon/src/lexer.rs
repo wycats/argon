@@ -3,6 +3,7 @@ mod tokenize;
 pub use self::tokenize::Lexer;
 
 use nan_preserving_float::F64;
+use std::fmt;
 
 #[derive(Debug)]
 pub struct LexicalError {}
@@ -32,4 +33,10 @@ pub enum Tok<'input> {
     Int(i32),
     Float(F64),
     WS(&'input str),
+}
+
+impl fmt::Display for Tok<'input> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
 }
