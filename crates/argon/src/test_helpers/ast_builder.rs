@@ -1,5 +1,6 @@
 use crate::ir::shared::Type;
-use crate::pos::SpannedItem;
+use crate::lexer::Tok;
+use crate::pos::{Spanned, SpannedItem};
 use crate::{ast, MathOperator};
 
 #[derive(Debug)]
@@ -71,7 +72,7 @@ pub struct FunctionBuilder<'module> {
     name: &'static str,
     parameters: Vec<ast::Parameter<'static>>,
     expressions: Vec<ast::Expression<'static>>,
-    ret: Option<Type>,
+    ret: Option<Spanned<Type>>,
     modifiers: Modifiers,
     parent: &'module mut ModuleBuilder,
 }
@@ -83,12 +84,14 @@ impl FunctionBuilder<'module> {
 
     pub fn param(&mut self, name: &'static str, ty: Type) {
         let name = ast::ident(name);
-        self.parameters
-            .push(ast::Parameter::new(name.synthetic("builder"), ty.into()));
+        self.parameters.push(ast::Parameter::new(
+            name.synthetic("builder"),
+            ty.synthetic("builder").into(),
+        ));
     }
 
     pub fn returning(&mut self, ty: Type) {
-        self.ret = Some(ty.into());
+        self.ret = Some(ty.synthetic("builder").into());
     }
 
     pub fn expression(&mut self, body: impl FnOnce(ExpressionBuilder) -> ast::Expression<'static>) {
@@ -109,7 +112,7 @@ impl FunctionBuilder<'module> {
         let mut function = ast::Function::new(
             ast::ident(name).synthetic("builder"),
             ast::Parameters::new(parameters),
-            ret.unwrap_or(Type::Void),
+            ret.unwrap_or(Type::Void.synthetic("builder")),
             ast::Block::new(expressions),
         );
 
@@ -130,7 +133,7 @@ impl ExpressionBuilder {
     }
 
     pub fn i32(self, integer: i32) -> ast::Expression<'static> {
-        ast::Expression::Const(ast::ConstExpression::Integer(integer))
+        ast::Expression::Const(ast::ConstExpression::Integer(integer.synthetic("test")))
     }
 }
 
@@ -140,6 +143,7 @@ impl std::ops::Add for ast::Expression<'static> {
     fn add(self, rhs: ast::Expression<'static>) -> ast::Expression<'static> {
         ast::Expression::Binary(
             MathOperator::Add,
+            Tok::Add.synthetic("test"),
             Box::new(ast::BinaryExpression::new(self, rhs)),
         )
     }

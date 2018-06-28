@@ -1,5 +1,6 @@
 use crate::compile::math::MathOperator;
 use crate::ir::{FunctionModifiers, Spanned, Type};
+use crate::lexer::Tok;
 use nan_preserving_float::F64;
 use std::collections::BTreeMap;
 use std::fmt;
@@ -33,7 +34,7 @@ impl fmt::Debug for RawIdentifier<'input> {
 #[derive(PartialEq, Clone, new)]
 pub struct Parameter<'input> {
     pub name: Identifier<'input>,
-    pub ty: Type,
+    pub ty: Spanned<Type>,
 }
 
 impl fmt::Debug for Parameter<'input> {
@@ -48,7 +49,7 @@ pub struct Parameters<'input> {
 }
 
 impl Parameters<'input> {
-    crate fn iter(&self) -> impl Iterator<Item = (Spanned<&str>, &Type)> {
+    crate fn iter(&self) -> impl Iterator<Item = (Spanned<&str>, &Spanned<Type>)> {
         self.list.iter().map(|arg| (arg.name.as_ref(), &arg.ty))
     }
 }
@@ -82,7 +83,7 @@ impl Parameters<'input> {
 pub struct Function<'input> {
     pub name: Identifier<'input>,
     pub args: Parameters<'input>,
-    pub ret: Type,
+    pub ret: Spanned<Type>,
     pub body: Block<'input>,
     pub modifiers: FunctionModifiers,
     crate mappings: BTreeMap<String, u32>,
@@ -92,7 +93,7 @@ impl Function<'input> {
     pub fn new(
         name: Identifier<'input>,
         args: Parameters<'input>,
-        ret: Type,
+        ret: Spanned<Type>,
         body: Block<'input>,
     ) -> Function<'input> {
         let mappings = function_mappings(&args);
@@ -153,6 +154,13 @@ impl fmt::Debug for Block<'input> {
 
 #[derive(PartialEq, Copy, Clone)]
 pub enum ConstExpression {
+    Integer(Spanned<i32>),
+    Float(Spanned<F64>),
+    Bool(Spanned<bool>),
+}
+
+#[derive(PartialEq, Copy, Clone)]
+crate enum ConstValue {
     Integer(i32),
     Float(F64),
     Bool(bool),
@@ -167,37 +175,45 @@ fn is_float_uint(float: F64) -> bool {
 }
 
 impl ConstExpression {
-    crate fn to_i32(&self) -> i32 {
+    crate fn value(&self) -> ConstValue {
         match self {
-            ConstExpression::Integer(int) => *int,
-            ConstExpression::Float(float) if is_float_int(*float) => float.to_float() as i32,
+            ConstExpression::Integer(Spanned { node: int, .. }) => ConstValue::Integer(*int),
+            ConstExpression::Float(Spanned { node: float, .. }) => ConstValue::Float(*float),
+            ConstExpression::Bool(Spanned { node: boolean, .. }) => ConstValue::Bool(*boolean),
+        }
+    }
+
+    crate fn to_i32(&self) -> i32 {
+        match self.value() {
+            ConstValue::Integer(int) => int,
+            ConstValue::Float(float) if is_float_int(float) => float.to_float() as i32,
 
             _ => panic!("Cannot convert {:?} to an integer"),
         }
     }
 
     crate fn to_u32(&self) -> u32 {
-        match self {
-            ConstExpression::Integer(int) if *int >= 0 => *int as u32,
-            ConstExpression::Float(float) if is_float_uint(*float) => float.to_float() as u32,
+        match self.value() {
+            ConstValue::Integer(int) if int >= 0 => int as u32,
+            ConstValue::Float(float) if is_float_uint(float) => float.to_float() as u32,
 
             _ => panic!("Cannot convert {:?} to an unsigned integer"),
         }
     }
 
     crate fn to_f32(&self) -> f32 {
-        match self {
-            ConstExpression::Integer(int) if *int >= 0 => *int as f32,
-            ConstExpression::Float(float) => float.to_float() as f32,
+        match self.value() {
+            ConstValue::Integer(int) if int >= 0 => int as f32,
+            ConstValue::Float(float) => float.to_float() as f32,
 
             _ => panic!("Cannot convert {:?} to a float"),
         }
     }
 
     crate fn to_f64(&self) -> f64 {
-        match self {
-            ConstExpression::Integer(int) if *int >= 0 => *int as f64,
-            ConstExpression::Float(float) => float.to_float(),
+        match self.value() {
+            ConstValue::Integer(int) if int >= 0 => int as f64,
+            ConstValue::Float(float) => float.to_float(),
 
             _ => panic!("Cannot convert {:?} to a float"),
         }
@@ -218,7 +234,11 @@ impl fmt::Debug for ConstExpression {
 pub enum Expression<'input> {
     Const(ConstExpression),
     VariableAccess(Identifier<'input>),
-    Binary(MathOperator, Box<BinaryExpression<'input>>),
+    Binary(
+        MathOperator,
+        Spanned<Tok<'input>>,
+        Box<BinaryExpression<'input>>,
+    ),
 }
 
 impl fmt::Debug for Expression<'input> {
@@ -226,7 +246,7 @@ impl fmt::Debug for Expression<'input> {
         let value: &dyn fmt::Debug = match self {
             Expression::Const(constant) => constant,
             Expression::VariableAccess(id) => id,
-            Expression::Binary(op, box BinaryExpression { lhs, rhs }) => {
+            Expression::Binary(op, tok, box BinaryExpression { lhs, rhs }) => {
                 return write!(f, "{:?} {:?} {:?}", lhs, op, rhs);
             }
         };

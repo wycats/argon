@@ -1,14 +1,15 @@
 use super::types::InferType;
 use super::{Annotated, Expression};
 use crate::ir::ast;
+use crate::ir::pos::SpannedItem;
 
 impl Expression {
     crate fn integer(value: i32) -> Expression {
-        Expression::Const(ast::ConstExpression::Integer(value))
+        Expression::Const(ast::ConstExpression::Integer(value.synthetic("test")))
     }
 
     crate fn bool(value: bool) -> Expression {
-        Expression::Const(ast::ConstExpression::Bool(value))
+        Expression::Const(ast::ConstExpression::Bool(value.synthetic("test")))
     }
 }
 

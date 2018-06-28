@@ -58,7 +58,7 @@ impl UnifyOne<'unify> {
             }
 
             (InferType::Constrained(c), InferType::Resolved(r)) => {
-                if !c.unifies_ty(r) {
+                if !c.unifies_ty(&r.node) {
                     return Err(CompileError::UnifyError(
                         InferType::Constrained(c.clone()),
                         InferType::Resolved(r.clone()),

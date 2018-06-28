@@ -9,9 +9,9 @@ pub struct Module<'input> {
 #[derive(Debug)]
 pub struct Function<'input> {
     pub name: Spanned<&'input str>,
-    pub params: Vec<Type>,
+    pub params: Vec<Spanned<Type>>,
     pub symbols: Vec<Spanned<&'input str>>,
-    pub ret: Type,
+    pub ret: Spanned<Type>,
     pub body: Block,
     pub modifiers: FunctionModifiers,
 }
@@ -136,7 +136,7 @@ impl ResolveFunction<'module> {
                 let local = self.func.mappings.get(id.node.name).unwrap();
                 Expression::VariableAccess(*local)
             }
-            ast::Expression::Binary(operator, box ast::BinaryExpression { lhs, rhs }) => {
+            ast::Expression::Binary(operator, tok, box ast::BinaryExpression { lhs, rhs }) => {
                 let lhs = self.resolve_expression(lhs)?;
                 let rhs = self.resolve_expression(rhs)?;
 

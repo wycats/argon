@@ -1,4 +1,5 @@
 use crate::annotated::Annotated;
+use crate::ir::Spanned;
 use crate::math::math_op;
 use crate::{annotated, ast, InferType, MathType, Type};
 use parity_wasm::elements;
@@ -39,7 +40,10 @@ fn compile_const(constant: &ast::ConstExpression, ty: &InferType) -> elements::O
     let ty = ty.clone().into_type();
 
     match ty {
-        Type::Math(math) => match math {
+        Spanned {
+            node: Type::Math(math),
+            ..
+        } => match math {
             MathType::I32 => elements::Opcode::I32Const(constant.to_i32()),
             MathType::I64 => elements::Opcode::I64Const(constant.to_i32() as i64),
             MathType::U32 => elements::Opcode::I32Const(unsafe { transmute(constant.to_u32()) }),

@@ -9,10 +9,10 @@ crate fn compile_function(
     let mut signature = function.signature();
 
     for ty in input.params.iter() {
-        signature = signature.with_param(parameter_type(&ty))
+        signature = signature.with_param(parameter_type(&ty.node))
     }
 
-    signature = signature.with_return_type(wasm_type(&input.ret));
+    signature = signature.with_return_type(wasm_type(&input.ret.node));
 
     let instructions = compile_body(&input.body, input);
 

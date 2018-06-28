@@ -1,0 +1,1380 @@
+Lalrpop Report File
+========================================
+
+Summary
+----------------------------------------
+
+Constructed 67 states
+
+State Table
+----------------------------------------
+
+State 0 {
+
+    Function          -> . "def" Identifier Parameters Block
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Function          -> . "def" Identifier Parameters "->" Type Block
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    ModifiedFunction  -> . Function
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    ModifiedFunction  -> . "export" Function
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    ModifiedFunction+ -> . ModifiedFunction
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    ModifiedFunction+ -> . ModifiedFunction+ ModifiedFunction
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Module            -> .
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Module            -> . ModifiedFunction+
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    __Module          -> . Module
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+
+    reduction Module ->
+        lookahead EOF
+
+    "def"             shift and goto 5
+    "export"          shift and goto 6
+
+    Function          goto 1
+    ModifiedFunction  goto 2
+    ModifiedFunction+ goto 3
+    Module            goto 4
+}
+
+State 1 {
+
+    ModifiedFunction -> Function .
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+
+    reduction ModifiedFunction -> Function
+        lookahead "def" "export" EOF
+
+
+}
+
+State 2 {
+
+    ModifiedFunction+ -> ModifiedFunction .
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+
+    reduction ModifiedFunction+ -> ModifiedFunction
+        lookahead "def" "export" EOF
+
+
+}
+
+State 3 {
+
+    Function          -> . "def" Identifier Parameters Block
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Function          -> . "def" Identifier Parameters "->" Type Block
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    ModifiedFunction  -> . Function
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    ModifiedFunction  -> . "export" Function
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    ModifiedFunction+ -> ModifiedFunction+ . ModifiedFunction
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Module            -> ModifiedFunction+ .
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+
+    reduction Module -> ModifiedFunction+
+        lookahead EOF
+
+    "def"            shift and goto 5
+    "export"         shift and goto 6
+
+    Function         goto 1
+    ModifiedFunction goto 7
+}
+
+State 4 {
+
+    __Module -> Module .
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+
+    reduction __Module -> Module
+        lookahead EOF
+
+
+}
+
+State 5 {
+
+    Function               -> "def" . Identifier Parameters Block
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Function               -> "def" . Identifier Parameters "->" Type Block
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Identifier             -> . Spanned<RawIdentifier>
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    RawIdentifier          -> . "Id"
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Spanned<RawIdentifier> -> . RawIdentifier
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    "Id"                   shift and goto 11
+
+    Identifier             goto 8
+    RawIdentifier          goto 9
+    Spanned<RawIdentifier> goto 10
+}
+
+State 6 {
+
+    Function         -> . "def" Identifier Parameters Block
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Function         -> . "def" Identifier Parameters "->" Type Block
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    ModifiedFunction -> "export" . Function
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    "def"    shift and goto 5
+
+    Function goto 12
+}
+
+State 7 {
+
+    ModifiedFunction+ -> ModifiedFunction+ ModifiedFunction .
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+
+    reduction ModifiedFunction+ -> ModifiedFunction+ ModifiedFunction
+        lookahead "def" "export" EOF
+
+
+}
+
+State 8 {
+
+    Function   -> "def" Identifier . Parameters Block
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Function   -> "def" Identifier . Parameters "->" Type Block
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Parameters -> . "(" Parameter ("," <Parameter>)+ ")"
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Parameters -> . "(" Parameter ")"
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Parameters -> . "(" ")"
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    "("        shift and goto 14
+
+    Parameters goto 13
+}
+
+State 9 {
+
+    Spanned<RawIdentifier> -> RawIdentifier .
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+
+    reduction Spanned<RawIdentifier> -> RawIdentifier
+        lookahead "(" "*" "+" "-" "/" ":" "Float" "Id" "Int" "}"
+
+
+}
+
+State 10 {
+
+    Identifier -> Spanned<RawIdentifier> .
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+
+    reduction Identifier -> Spanned<RawIdentifier>
+        lookahead "(" "*" "+" "-" "/" ":" "Float" "Id" "Int" "}"
+
+
+}
+
+State 11 {
+
+    RawIdentifier -> "Id" .
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+
+    reduction RawIdentifier -> "Id"
+        lookahead "(" "*" "+" "-" "/" ":" "Float" "Id" "Int" "}"
+
+
+}
+
+State 12 {
+
+    ModifiedFunction -> "export" Function .
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+
+    reduction ModifiedFunction -> "export" Function
+        lookahead "def" "export" EOF
+
+
+}
+
+State 13 {
+
+    Block    -> . "{" (<Expression>)+ "}"
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Block    -> . "{" "}"
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Function -> "def" Identifier Parameters . Block
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Function -> "def" Identifier Parameters . "->" Type Block
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    "->"  shift and goto 16
+    "{"   shift and goto 17
+
+    Block goto 15
+}
+
+State 14 {
+
+    Identifier             -> . Spanned<RawIdentifier>
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Parameter              -> . Identifier ":" Type
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Parameters             -> "(" . Parameter ("," <Parameter>)+ ")"
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Parameters             -> "(" . Parameter ")"
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Parameters             -> "(" . ")"
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    RawIdentifier          -> . "Id"
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Spanned<RawIdentifier> -> . RawIdentifier
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    ")"                    shift and goto 20
+    "Id"                   shift and goto 11
+
+    Identifier             goto 18
+    Parameter              goto 19
+    RawIdentifier          goto 9
+    Spanned<RawIdentifier> goto 10
+}
+
+State 15 {
+
+    Function -> "def" Identifier Parameters Block .
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+
+    reduction Function -> "def" Identifier Parameters Block
+        lookahead "def" "export" EOF
+
+
+}
+
+State 16 {
+
+    Function         -> "def" Identifier Parameters "->" . Type Block
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    RawType          -> . "f32"
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    RawType          -> . "f64"
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    RawType          -> . "i32"
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    RawType          -> . "i64"
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    RawType          -> . "u32"
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    RawType          -> . "u64"
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Spanned<RawType> -> . RawType
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Type             -> . Spanned<RawType>
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    "f32"            shift and goto 24
+    "f64"            shift and goto 25
+    "i32"            shift and goto 26
+    "i64"            shift and goto 27
+    "u32"            shift and goto 28
+    "u64"            shift and goto 29
+
+    RawType          goto 21
+    Spanned<RawType> goto 22
+    Type             goto 23
+}
+
+State 17 {
+
+    (<Expression>)+        -> . (<Expression>)+ Expression
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    (<Expression>)+        -> . Expression
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Block                  -> "{" . (<Expression>)+ "}"
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Block                  -> "{" . "}"
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Expression             -> . Expression3
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Expression1            -> . F64
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Expression1            -> . I32
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Expression1            -> . Identifier
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Expression2            -> . Expression1
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Expression2            -> . Expression2 Spanned<"*"> Expression1
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Expression2            -> . Expression2 Spanned<"/"> Expression1
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Expression3            -> . Expression2
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Expression3            -> . Expression3 Spanned<"+"> Expression2
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Expression3            -> . Expression3 Spanned<"-"> Expression2
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    F64                    -> . Spanned<"Float">
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    I32                    -> . Spanned<"Int">
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Identifier             -> . Spanned<RawIdentifier>
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    RawIdentifier          -> . "Id"
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Spanned<"Float">       -> . "Float"
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Spanned<"Int">         -> . "Int"
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Spanned<RawIdentifier> -> . RawIdentifier
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    "Float"                shift and goto 40
+    "Id"                   shift and goto 11
+    "Int"                  shift and goto 41
+    "}"                    shift and goto 42
+
+    (<Expression>)+        goto 30
+    Expression             goto 31
+    Expression1            goto 32
+    Expression2            goto 33
+    Expression3            goto 34
+    F64                    goto 35
+    I32                    goto 36
+    Identifier             goto 37
+    RawIdentifier          goto 9
+    Spanned<"Float">       goto 38
+    Spanned<"Int">         goto 39
+    Spanned<RawIdentifier> goto 10
+}
+
+State 18 {
+
+    Parameter -> Identifier . ":" Type
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    ":" shift and goto 43
+
+}
+
+State 19 {
+
+    ("," <Parameter>)+ -> . ("," <Parameter>)+ "," Parameter
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    ("," <Parameter>)+ -> . "," Parameter
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Parameters         -> "(" Parameter . ("," <Parameter>)+ ")"
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Parameters         -> "(" Parameter . ")"
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    ")"                shift and goto 45
+    ","                shift and goto 46
+
+    ("," <Parameter>)+ goto 44
+}
+
+State 20 {
+
+    Parameters -> "(" ")" .
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+
+    reduction Parameters -> "(" ")"
+        lookahead "->" "{"
+
+
+}
+
+State 21 {
+
+    Spanned<RawType> -> RawType .
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+
+    reduction Spanned<RawType> -> RawType
+        lookahead ")" "," "{"
+
+
+}
+
+State 22 {
+
+    Type -> Spanned<RawType> .
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+
+    reduction Type -> Spanned<RawType>
+        lookahead ")" "," "{"
+
+
+}
+
+State 23 {
+
+    Block    -> . "{" (<Expression>)+ "}"
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Block    -> . "{" "}"
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Function -> "def" Identifier Parameters "->" Type . Block
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    "{"   shift and goto 17
+
+    Block goto 47
+}
+
+State 24 {
+
+    RawType -> "f32" .
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+
+    reduction RawType -> "f32"
+        lookahead ")" "," "{"
+
+
+}
+
+State 25 {
+
+    RawType -> "f64" .
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+
+    reduction RawType -> "f64"
+        lookahead ")" "," "{"
+
+
+}
+
+State 26 {
+
+    RawType -> "i32" .
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+
+    reduction RawType -> "i32"
+        lookahead ")" "," "{"
+
+
+}
+
+State 27 {
+
+    RawType -> "i64" .
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+
+    reduction RawType -> "i64"
+        lookahead ")" "," "{"
+
+
+}
+
+State 28 {
+
+    RawType -> "u32" .
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+
+    reduction RawType -> "u32"
+        lookahead ")" "," "{"
+
+
+}
+
+State 29 {
+
+    RawType -> "u64" .
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+
+    reduction RawType -> "u64"
+        lookahead ")" "," "{"
+
+
+}
+
+State 30 {
+
+    (<Expression>)+        -> (<Expression>)+ . Expression
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Block                  -> "{" (<Expression>)+ . "}"
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Expression             -> . Expression3
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Expression1            -> . F64
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Expression1            -> . I32
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Expression1            -> . Identifier
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Expression2            -> . Expression1
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Expression2            -> . Expression2 Spanned<"*"> Expression1
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Expression2            -> . Expression2 Spanned<"/"> Expression1
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Expression3            -> . Expression2
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Expression3            -> . Expression3 Spanned<"+"> Expression2
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Expression3            -> . Expression3 Spanned<"-"> Expression2
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    F64                    -> . Spanned<"Float">
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    I32                    -> . Spanned<"Int">
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Identifier             -> . Spanned<RawIdentifier>
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    RawIdentifier          -> . "Id"
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Spanned<"Float">       -> . "Float"
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Spanned<"Int">         -> . "Int"
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Spanned<RawIdentifier> -> . RawIdentifier
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    "Float"                shift and goto 40
+    "Id"                   shift and goto 11
+    "Int"                  shift and goto 41
+    "}"                    shift and goto 49
+
+    Expression             goto 48
+    Expression1            goto 32
+    Expression2            goto 33
+    Expression3            goto 34
+    F64                    goto 35
+    I32                    goto 36
+    Identifier             goto 37
+    RawIdentifier          goto 9
+    Spanned<"Float">       goto 38
+    Spanned<"Int">         goto 39
+    Spanned<RawIdentifier> goto 10
+}
+
+State 31 {
+
+    (<Expression>)+ -> Expression .
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+
+    reduction (<Expression>)+ -> Expression
+        lookahead "Float" "Id" "Int" "}"
+
+
+}
+
+State 32 {
+
+    Expression2 -> Expression1 .
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+
+    reduction Expression2 -> Expression1
+        lookahead "*" "+" "-" "/" "Float" "Id" "Int" "}"
+
+
+}
+
+State 33 {
+
+    Expression2  -> Expression2 . Spanned<"*"> Expression1
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Expression2  -> Expression2 . Spanned<"/"> Expression1
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Expression3  -> Expression2 .
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Spanned<"*"> -> . "*"
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Spanned<"/"> -> . "/"
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+
+    reduction Expression3 -> Expression2
+        lookahead "+" "-" "Float" "Id" "Int" "}"
+
+    "*"          shift and goto 52
+    "/"          shift and goto 53
+
+    Spanned<"*"> goto 50
+    Spanned<"/"> goto 51
+}
+
+State 34 {
+
+    Expression   -> Expression3 .
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Expression3  -> Expression3 . Spanned<"+"> Expression2
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Expression3  -> Expression3 . Spanned<"-"> Expression2
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Spanned<"+"> -> . "+"
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Spanned<"-"> -> . "-"
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+
+    reduction Expression -> Expression3
+        lookahead "Float" "Id" "Int" "}"
+
+    "+"          shift and goto 56
+    "-"          shift and goto 57
+
+    Spanned<"+"> goto 54
+    Spanned<"-"> goto 55
+}
+
+State 35 {
+
+    Expression1 -> F64 .
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+
+    reduction Expression1 -> F64
+        lookahead "*" "+" "-" "/" "Float" "Id" "Int" "}"
+
+
+}
+
+State 36 {
+
+    Expression1 -> I32 .
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+
+    reduction Expression1 -> I32
+        lookahead "*" "+" "-" "/" "Float" "Id" "Int" "}"
+
+
+}
+
+State 37 {
+
+    Expression1 -> Identifier .
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+
+    reduction Expression1 -> Identifier
+        lookahead "*" "+" "-" "/" "Float" "Id" "Int" "}"
+
+
+}
+
+State 38 {
+
+    F64 -> Spanned<"Float"> .
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+
+    reduction F64 -> Spanned<"Float">
+        lookahead "*" "+" "-" "/" "Float" "Id" "Int" "}"
+
+
+}
+
+State 39 {
+
+    I32 -> Spanned<"Int"> .
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+
+    reduction I32 -> Spanned<"Int">
+        lookahead "*" "+" "-" "/" "Float" "Id" "Int" "}"
+
+
+}
+
+State 40 {
+
+    Spanned<"Float"> -> "Float" .
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+
+    reduction Spanned<"Float"> -> "Float"
+        lookahead "*" "+" "-" "/" "Float" "Id" "Int" "}"
+
+
+}
+
+State 41 {
+
+    Spanned<"Int"> -> "Int" .
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+
+    reduction Spanned<"Int"> -> "Int"
+        lookahead "*" "+" "-" "/" "Float" "Id" "Int" "}"
+
+
+}
+
+State 42 {
+
+    Block -> "{" "}" .
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+
+    reduction Block -> "{" "}"
+        lookahead "def" "export" EOF
+
+
+}
+
+State 43 {
+
+    Parameter        -> Identifier ":" . Type
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    RawType          -> . "f32"
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    RawType          -> . "f64"
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    RawType          -> . "i32"
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    RawType          -> . "i64"
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    RawType          -> . "u32"
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    RawType          -> . "u64"
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Spanned<RawType> -> . RawType
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Type             -> . Spanned<RawType>
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    "f32"            shift and goto 24
+    "f64"            shift and goto 25
+    "i32"            shift and goto 26
+    "i64"            shift and goto 27
+    "u32"            shift and goto 28
+    "u64"            shift and goto 29
+
+    RawType          goto 21
+    Spanned<RawType> goto 22
+    Type             goto 58
+}
+
+State 44 {
+
+    ("," <Parameter>)+ -> ("," <Parameter>)+ . "," Parameter
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Parameters         -> "(" Parameter ("," <Parameter>)+ . ")"
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    ")" shift and goto 59
+    "," shift and goto 60
+
+}
+
+State 45 {
+
+    Parameters -> "(" Parameter ")" .
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+
+    reduction Parameters -> "(" Parameter ")"
+        lookahead "->" "{"
+
+
+}
+
+State 46 {
+
+    ("," <Parameter>)+     -> "," . Parameter
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Identifier             -> . Spanned<RawIdentifier>
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Parameter              -> . Identifier ":" Type
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    RawIdentifier          -> . "Id"
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Spanned<RawIdentifier> -> . RawIdentifier
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    "Id"                   shift and goto 11
+
+    Identifier             goto 18
+    Parameter              goto 61
+    RawIdentifier          goto 9
+    Spanned<RawIdentifier> goto 10
+}
+
+State 47 {
+
+    Function -> "def" Identifier Parameters "->" Type Block .
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+
+    reduction Function -> "def" Identifier Parameters "->" Type Block
+        lookahead "def" "export" EOF
+
+
+}
+
+State 48 {
+
+    (<Expression>)+ -> (<Expression>)+ Expression .
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+
+    reduction (<Expression>)+ -> (<Expression>)+ Expression
+        lookahead "Float" "Id" "Int" "}"
+
+
+}
+
+State 49 {
+
+    Block -> "{" (<Expression>)+ "}" .
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+
+    reduction Block -> "{" (<Expression>)+ "}"
+        lookahead "def" "export" EOF
+
+
+}
+
+State 50 {
+
+    Expression1            -> . F64
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Expression1            -> . I32
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Expression1            -> . Identifier
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Expression2            -> Expression2 Spanned<"*"> . Expression1
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    F64                    -> . Spanned<"Float">
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    I32                    -> . Spanned<"Int">
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Identifier             -> . Spanned<RawIdentifier>
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    RawIdentifier          -> . "Id"
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Spanned<"Float">       -> . "Float"
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Spanned<"Int">         -> . "Int"
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Spanned<RawIdentifier> -> . RawIdentifier
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    "Float"                shift and goto 40
+    "Id"                   shift and goto 11
+    "Int"                  shift and goto 41
+
+    Expression1            goto 62
+    F64                    goto 35
+    I32                    goto 36
+    Identifier             goto 37
+    RawIdentifier          goto 9
+    Spanned<"Float">       goto 38
+    Spanned<"Int">         goto 39
+    Spanned<RawIdentifier> goto 10
+}
+
+State 51 {
+
+    Expression1            -> . F64
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Expression1            -> . I32
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Expression1            -> . Identifier
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Expression2            -> Expression2 Spanned<"/"> . Expression1
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    F64                    -> . Spanned<"Float">
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    I32                    -> . Spanned<"Int">
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Identifier             -> . Spanned<RawIdentifier>
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    RawIdentifier          -> . "Id"
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Spanned<"Float">       -> . "Float"
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Spanned<"Int">         -> . "Int"
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Spanned<RawIdentifier> -> . RawIdentifier
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    "Float"                shift and goto 40
+    "Id"                   shift and goto 11
+    "Int"                  shift and goto 41
+
+    Expression1            goto 63
+    F64                    goto 35
+    I32                    goto 36
+    Identifier             goto 37
+    RawIdentifier          goto 9
+    Spanned<"Float">       goto 38
+    Spanned<"Int">         goto 39
+    Spanned<RawIdentifier> goto 10
+}
+
+State 52 {
+
+    Spanned<"*"> -> "*" .
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+
+    reduction Spanned<"*"> -> "*"
+        lookahead "Float" "Id" "Int"
+
+
+}
+
+State 53 {
+
+    Spanned<"/"> -> "/" .
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+
+    reduction Spanned<"/"> -> "/"
+        lookahead "Float" "Id" "Int"
+
+
+}
+
+State 54 {
+
+    Expression1            -> . F64
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Expression1            -> . I32
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Expression1            -> . Identifier
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Expression2            -> . Expression1
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Expression2            -> . Expression2 Spanned<"*"> Expression1
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Expression2            -> . Expression2 Spanned<"/"> Expression1
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Expression3            -> Expression3 Spanned<"+"> . Expression2
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    F64                    -> . Spanned<"Float">
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    I32                    -> . Spanned<"Int">
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Identifier             -> . Spanned<RawIdentifier>
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    RawIdentifier          -> . "Id"
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Spanned<"Float">       -> . "Float"
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Spanned<"Int">         -> . "Int"
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Spanned<RawIdentifier> -> . RawIdentifier
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    "Float"                shift and goto 40
+    "Id"                   shift and goto 11
+    "Int"                  shift and goto 41
+
+    Expression1            goto 32
+    Expression2            goto 64
+    F64                    goto 35
+    I32                    goto 36
+    Identifier             goto 37
+    RawIdentifier          goto 9
+    Spanned<"Float">       goto 38
+    Spanned<"Int">         goto 39
+    Spanned<RawIdentifier> goto 10
+}
+
+State 55 {
+
+    Expression1            -> . F64
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Expression1            -> . I32
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Expression1            -> . Identifier
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Expression2            -> . Expression1
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Expression2            -> . Expression2 Spanned<"*"> Expression1
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Expression2            -> . Expression2 Spanned<"/"> Expression1
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Expression3            -> Expression3 Spanned<"-"> . Expression2
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    F64                    -> . Spanned<"Float">
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    I32                    -> . Spanned<"Int">
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Identifier             -> . Spanned<RawIdentifier>
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    RawIdentifier          -> . "Id"
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Spanned<"Float">       -> . "Float"
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Spanned<"Int">         -> . "Int"
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Spanned<RawIdentifier> -> . RawIdentifier
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    "Float"                shift and goto 40
+    "Id"                   shift and goto 11
+    "Int"                  shift and goto 41
+
+    Expression1            goto 32
+    Expression2            goto 65
+    F64                    goto 35
+    I32                    goto 36
+    Identifier             goto 37
+    RawIdentifier          goto 9
+    Spanned<"Float">       goto 38
+    Spanned<"Int">         goto 39
+    Spanned<RawIdentifier> goto 10
+}
+
+State 56 {
+
+    Spanned<"+"> -> "+" .
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+
+    reduction Spanned<"+"> -> "+"
+        lookahead "Float" "Id" "Int"
+
+
+}
+
+State 57 {
+
+    Spanned<"-"> -> "-" .
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+
+    reduction Spanned<"-"> -> "-"
+        lookahead "Float" "Id" "Int"
+
+
+}
+
+State 58 {
+
+    Parameter -> Identifier ":" Type .
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+
+    reduction Parameter -> Identifier ":" Type
+        lookahead ")" ","
+
+
+}
+
+State 59 {
+
+    Parameters -> "(" Parameter ("," <Parameter>)+ ")" .
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+
+    reduction Parameters -> "(" Parameter ("," <Parameter>)+ ")"
+        lookahead "->" "{"
+
+
+}
+
+State 60 {
+
+    ("," <Parameter>)+     -> ("," <Parameter>)+ "," . Parameter
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Identifier             -> . Spanned<RawIdentifier>
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Parameter              -> . Identifier ":" Type
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    RawIdentifier          -> . "Id"
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Spanned<RawIdentifier> -> . RawIdentifier
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    "Id"                   shift and goto 11
+
+    Identifier             goto 18
+    Parameter              goto 66
+    RawIdentifier          goto 9
+    Spanned<RawIdentifier> goto 10
+}
+
+State 61 {
+
+    ("," <Parameter>)+ -> "," Parameter .
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+
+    reduction ("," <Parameter>)+ -> "," Parameter
+        lookahead ")" ","
+
+
+}
+
+State 62 {
+
+    Expression2 -> Expression2 Spanned<"*"> Expression1 .
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+
+    reduction Expression2 -> Expression2 Spanned<"*"> Expression1
+        lookahead "*" "+" "-" "/" "Float" "Id" "Int" "}"
+
+
+}
+
+State 63 {
+
+    Expression2 -> Expression2 Spanned<"/"> Expression1 .
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+
+    reduction Expression2 -> Expression2 Spanned<"/"> Expression1
+        lookahead "*" "+" "-" "/" "Float" "Id" "Int" "}"
+
+
+}
+
+State 64 {
+
+    Expression2  -> Expression2 . Spanned<"*"> Expression1
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Expression2  -> Expression2 . Spanned<"/"> Expression1
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Expression3  -> Expression3 Spanned<"+"> Expression2 .
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Spanned<"*"> -> . "*"
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Spanned<"/"> -> . "/"
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+
+    reduction Expression3 -> Expression3 Spanned<"+"> Expression2
+        lookahead "+" "-" "Float" "Id" "Int" "}"
+
+    "*"          shift and goto 52
+    "/"          shift and goto 53
+
+    Spanned<"*"> goto 50
+    Spanned<"/"> goto 51
+}
+
+State 65 {
+
+    Expression2  -> Expression2 . Spanned<"*"> Expression1
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Expression2  -> Expression2 . Spanned<"/"> Expression1
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Expression3  -> Expression3 Spanned<"-"> Expression2 .
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Spanned<"*"> -> . "*"
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+    Spanned<"/"> -> . "/"
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+
+    reduction Expression3 -> Expression3 Spanned<"-"> Expression2
+        lookahead "+" "-" "Float" "Id" "Int" "}"
+
+    "*"          shift and goto 52
+    "/"          shift and goto 53
+
+    Spanned<"*"> goto 50
+    Spanned<"/"> goto 51
+}
+
+State 66 {
+
+    ("," <Parameter>)+ -> ("," <Parameter>)+ "," Parameter .
+        lookahead "(" ")" "*" "+" "," "-" "->" "/" ":" "Float" "Id" "Int" "WS" "def" "export" "f32" "f64" "i32" "i64" "u32" "u64" "{" "}" EOF
+
+
+    reduction ("," <Parameter>)+ -> ("," <Parameter>)+ "," Parameter
+        lookahead ")" ","
+
+
+}

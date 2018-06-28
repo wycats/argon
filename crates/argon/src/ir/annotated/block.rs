@@ -2,6 +2,7 @@ use super::types::InferType;
 use super::{Annotated, Expression, TypeEnv};
 use crate::infer::unify::UnifyTable;
 use crate::infer::{Constraint, Constraints};
+use crate::ir::pos::SpannedItem;
 use crate::ir::resolved;
 use crate::Type;
 
@@ -32,7 +33,7 @@ impl Block {
 impl Block {
     crate fn last_ty(&self) -> InferType {
         match self.expressions.last() {
-            None => InferType::Resolved(Type::Void),
+            None => InferType::Resolved(Type::Void.synthetic("void")),
             Some(e) => e.ty.clone(),
         }
     }

@@ -1,3 +1,4 @@
+use crate::ir::{Spanned, SpannedItem};
 use crate::{MathType, Type};
 use itertools::Itertools;
 use std::fmt;
@@ -23,15 +24,15 @@ impl fmt::Debug for TypeVar {
 // up in the TypeEnv
 crate struct TypeEnv<'input> {
     // When we get locals, this will need to be changed
-    crate params: &'input [Type],
+    crate params: &'input [Spanned<Type>],
 }
 
 impl TypeEnv<'input> {
-    crate fn params(params: &'input [Type]) -> TypeEnv<'input> {
+    crate fn params(params: &'input [Spanned<Type>]) -> TypeEnv<'input> {
         TypeEnv { params }
     }
 
-    crate fn get_local(&self, local: usize) -> Type {
+    crate fn get_local(&self, local: usize) -> Spanned<Type> {
         self.params[local].clone()
     }
 }
@@ -61,9 +62,9 @@ impl ConstrainedType {
 
 #[derive(Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub enum InferType {
-    Resolved(Type),
+    Resolved(Spanned<Type>),
     Constrained(ConstrainedType),
-    Function(Vec<Type>, Type),
+    Function(Vec<Spanned<Type>>, Spanned<Type>),
     VariableFunction(Vec<InferType>, Box<InferType>),
     Variable(TypeVar),
 }
@@ -91,7 +92,7 @@ impl fmt::Debug for InferType {
 }
 
 impl InferType {
-    crate fn into_type(self) -> Type {
+    crate fn into_type(self) -> Spanned<Type> {
         match self {
             InferType::Resolved(ty) => ty,
             other => panic!("Cannot convert a {:?} into a Type", other),
@@ -100,7 +101,10 @@ impl InferType {
 
     crate fn as_math(&self) -> MathType {
         match self {
-            InferType::Resolved(Type::Math(ty)) => *ty,
+            InferType::Resolved(Spanned {
+                node: Type::Math(ty),
+                ..
+            }) => *ty,
             other => panic!("Cannot convert a {:?} into a MathType", other),
         }
     }
@@ -118,21 +122,21 @@ impl InferType {
     }
 
     crate fn bool() -> InferType {
-        InferType::Resolved(Type::bool())
+        InferType::Resolved(Type::bool().synthetic("test"))
     }
 }
 
 #[cfg(test)]
 impl InferType {
     crate fn i32() -> InferType {
-        InferType::Resolved(Type::i32())
+        InferType::Resolved(Type::i32().synthetic("test"))
     }
 
     crate fn i64() -> InferType {
-        InferType::Resolved(Type::i64())
+        InferType::Resolved(Type::i64().synthetic("test"))
     }
 
     crate fn f64() -> InferType {
-        InferType::Resolved(Type::f64())
+        InferType::Resolved(Type::f64().synthetic("test"))
     }
 }

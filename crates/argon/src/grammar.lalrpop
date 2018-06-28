@@ -24,7 +24,7 @@ ModifiedFunction: Function<'input> = {
 
 Function: Function<'input> = {
     "def" <name:Identifier> <args:Parameters> "->" <ty:Type> <body:Block> => Function::new(name, args, ty, body),
-    "def" <name:Identifier> <args:Parameters> <body:Block> => Function::new(name, args, Type::Void, body)
+    "def" <name:Identifier> <args:Parameters> <body:Block> => Function::new(name, args, Type::void(), body)
 }
 
 Parameters: Parameters<'input> = {
@@ -36,7 +36,11 @@ Parameter: Parameter<'input> = {
     <Identifier> ":" <Type> => Parameter::new(<>)
 }
 
-Type: Type = {
+Type: Spanned<Type> = {
+    <Spanned<RawType>> => <>
+}
+
+RawType: Type = {
     "i32" => Type::i32(),
     "i64" => Type::i64(),
     "u32" => Type::u32(),
@@ -61,21 +65,21 @@ Expression1: Expression<'input> = {
 
 Expression2: Expression<'input> = {
     <Expression1>,
-    <lhs:Expression2> "*" <rhs:Expression1> => Expression::Binary(MathOperator::Mul, Box::new(BinaryExpression::new(lhs, rhs))),
-    <lhs:Expression2> "/" <rhs:Expression1> => Expression::Binary(MathOperator::Div, Box::new(BinaryExpression::new(lhs, rhs)))
+    <lhs:Expression2> <op:Spanned<"*">> <rhs:Expression1> => Expression::Binary(MathOperator::Mul, op, Box::new(BinaryExpression::new(lhs, rhs))),
+    <lhs:Expression2> <op:Spanned<"/">> <rhs:Expression1> => Expression::Binary(MathOperator::Div, op, Box::new(BinaryExpression::new(lhs, rhs)))
 }
 
 Expression3: Expression<'input> = {
     <Expression2>,
-    <lhs:Expression3> "+" <rhs:Expression2> => Expression::Binary(MathOperator::Add, Box::new(BinaryExpression::new(lhs, rhs))),
-    <lhs:Expression3> "-" <rhs:Expression2> => Expression::Binary(MathOperator::Sub, Box::new(BinaryExpression::new(lhs, rhs)))
+    <lhs:Expression3> <op:Spanned<"+">> <rhs:Expression2> => Expression::Binary(MathOperator::Add, op, Box::new(BinaryExpression::new(lhs, rhs))),
+    <lhs:Expression3> <op:Spanned<"-">> <rhs:Expression2> => Expression::Binary(MathOperator::Sub, op, Box::new(BinaryExpression::new(lhs, rhs)))
 }
 
-Identifier: Identifier<'input> = <id: Spanned<RawIdentifier>> => id;
+Identifier: Spanned<RawIdentifier<'input>> = <id: Spanned<RawIdentifier>> => id;
 RawIdentifier: RawIdentifier<'input> = <id: "Id"> => ident(id);
 
-I32: Expression<'input> = <"Int"> => Expression::Const(ast::ConstExpression::Integer(<>));
-F64: Expression<'input> = <"Float"> => Expression::Const(ast::ConstExpression::Float(<>));
+I32: Expression<'input> = <Spanned<"Int">> => Expression::Const(ast::ConstExpression::Integer(<>));
+F64: Expression<'input> = <Spanned<"Float">> => Expression::Const(ast::ConstExpression::Float(<>));
 
 extern {
     type Location = usize;

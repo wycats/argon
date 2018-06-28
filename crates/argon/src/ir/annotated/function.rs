@@ -7,9 +7,9 @@ use crate::{FunctionModifiers, Type};
 #[derive(Debug)]
 crate struct Function<'input> {
     crate name: Spanned<&'input str>,
-    crate params: Vec<Type>,
+    crate params: Vec<Spanned<Type>>,
     crate symbols: Vec<Spanned<&'input str>>,
-    crate ret: Type,
+    crate ret: Spanned<Type>,
     crate body: Annotated<Block>,
     crate modifiers: FunctionModifiers,
 }

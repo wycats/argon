@@ -1,4 +1,5 @@
 use crate::compile::math::{MathOperator, MathType};
+use crate::ir::pos::{Spanned, SpannedItem};
 use crate::ir::resolved::ResolveError;
 use crate::InferType;
 use failure::Fail;
@@ -135,6 +136,10 @@ impl Type {
 
     pub fn f64() -> Type {
         Type::Math(MathType::F64)
+    }
+
+    pub fn void() -> Spanned<Type> {
+        Type::Void.synthetic("void")
     }
 }
 

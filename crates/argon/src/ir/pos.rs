@@ -1,9 +1,9 @@
 use std::fmt::{self, Debug};
 
-#[derive(Copy, Clone, Eq, PartialEq)]
+#[derive(Copy, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct Id(u32);
 
-#[derive(Copy, Clone, Eq, PartialEq)]
+#[derive(Copy, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub enum Span {
     Synthetic(&'static str),
     ByteSpan(ByteSpan),
@@ -18,14 +18,14 @@ impl fmt::Debug for Span {
     }
 }
 
-#[derive(Copy, Clone, Eq, PartialEq, new)]
+#[derive(Copy, Clone, Eq, PartialEq, Hash, Ord, PartialOrd, new)]
 pub struct ByteSpan {
     start: usize,
     end: usize,
     source: Id,
 }
 
-#[derive(Eq, PartialEq, Clone)]
+#[derive(Eq, PartialEq, Copy, Clone, Hash, Ord, PartialOrd)]
 pub struct Spanned<Node: PartialEq + Debug> {
     crate node: Node,
     crate span: Span,

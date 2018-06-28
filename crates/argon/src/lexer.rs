@@ -8,7 +8,7 @@ use std::fmt;
 #[derive(Debug)]
 pub struct LexicalError {}
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub enum Tok<'input> {
     Export,
     Def,
