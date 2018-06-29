@@ -33,6 +33,12 @@ pub struct Spanned<Node: PartialEq + Debug> {
 
 impl<Node: PartialEq + Debug> fmt::Debug for Spanned<Node> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}@{:?}", self.node, self.span)
+    }
+}
+
+impl<Node: PartialEq + fmt::Display + fmt::Debug> fmt::Display for Spanned<Node> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         if f.alternate() {
             write!(f, "{:?}@{:?}", self.node, self.span)
         } else {

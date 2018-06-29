@@ -241,6 +241,24 @@ pub enum Expression<'input> {
     ),
 }
 
+impl Expression<'input> {
+    pub fn binary(
+        op: Spanned<Tok<'input>>,
+        expr: Box<BinaryExpression<'input>>,
+    ) -> Expression<'input> {
+        let operator = match op.node {
+            Tok::Add => MathOperator::Add,
+            Tok::Sub => MathOperator::Sub,
+            Tok::Mul => MathOperator::Mul,
+            Tok::Div => MathOperator::Div,
+
+            _ => unreachable!(),
+        };
+
+        Expression::Binary(operator, op, expr)
+    }
+}
+
 impl fmt::Debug for Expression<'input> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let value: &dyn fmt::Debug = match self {

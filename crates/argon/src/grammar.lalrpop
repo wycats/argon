@@ -13,6 +13,9 @@ grammar<'input>;
 Spanned<Rule>: Spanned<Rule> =
     <l:@L> <rule:Rule> <r:@R> => rule.spanned(l, r);
 
+Binary<LHS, OP, RHS>: Expression<'input> =
+    <l:@L> <lhs:LHS> <op:OP> <rhs:RHS> <r:@R> => Expression::binary(op, Box::new(BinaryExpression::new(lhs, rhs)));
+
 pub Module: Module<'input> = {
     (<ModifiedFunction*>) => Module::new(<>)
 }
@@ -65,14 +68,14 @@ Expression1: Expression<'input> = {
 
 Expression2: Expression<'input> = {
     <Expression1>,
-    <lhs:Expression2> <op:Spanned<"*">> <rhs:Expression1> => Expression::Binary(MathOperator::Mul, op, Box::new(BinaryExpression::new(lhs, rhs))),
-    <lhs:Expression2> <op:Spanned<"/">> <rhs:Expression1> => Expression::Binary(MathOperator::Div, op, Box::new(BinaryExpression::new(lhs, rhs)))
+    <Binary<Expression2, Spanned<"*">, Expression1>>,
+    <Binary<Expression2, Spanned<"/">, Expression1>>,
 }
 
 Expression3: Expression<'input> = {
     <Expression2>,
-    <lhs:Expression3> <op:Spanned<"+">> <rhs:Expression2> => Expression::Binary(MathOperator::Add, op, Box::new(BinaryExpression::new(lhs, rhs))),
-    <lhs:Expression3> <op:Spanned<"-">> <rhs:Expression2> => Expression::Binary(MathOperator::Sub, op, Box::new(BinaryExpression::new(lhs, rhs)))
+    <Binary<Expression3, Spanned<"+">, Expression2>>,
+    <Binary<Expression3, Spanned<"-">, Expression2>>,
 }
 
 Identifier: Spanned<RawIdentifier<'input>> = <id: Spanned<RawIdentifier>> => id;

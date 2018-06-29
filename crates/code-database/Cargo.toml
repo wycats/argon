@@ -1,0 +1,13 @@
+cargo-features = ["edition"]
+
+[package]
+name = "code-database"
+version = "0.1.0"
+authors = ["Yehuda Katz <wycats@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+failure = "0.1.1"
+codespan = "0.1.2"
+shellexpand = "1.0.0"
+derive-new = "0.5.4"
