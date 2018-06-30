@@ -2,11 +2,16 @@ use failure::{Error, ResultExt};
 use std::fs;
 use std::path::{Path, PathBuf};
 
+#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct AbsolutePath(PathBuf);
 
 impl AbsolutePath {
     pub fn as_path(&self) -> &Path {
         self.0.as_path()
+    }
+
+    pub fn as_path_buf(&self) -> &PathBuf {
+        &self.0
     }
 
     pub fn expand(filename: impl AsRef<str>) -> Result<AbsolutePath, Error> {
@@ -45,5 +50,11 @@ impl AbsolutePath {
         }
 
         Ok(AbsolutePath(canonical))
+    }
+}
+
+impl AsRef<Path> for AbsolutePath {
+    fn as_ref(&self) -> &Path {
+        self.0.as_path()
     }
 }

@@ -2,6 +2,7 @@ use crate::ir::shared::Type;
 use crate::lexer::Tok;
 use crate::pos::{Spanned, SpannedItem};
 use crate::{ast, MathOperator};
+use std::borrow::Cow;
 
 #[derive(Debug)]
 pub struct AstBuilder {
@@ -83,7 +84,7 @@ impl FunctionBuilder<'module> {
     }
 
     pub fn param(&mut self, name: &'static str, ty: Type) {
-        let name = ast::ident(name);
+        let name = ast::ident(Cow::Borrowed(name));
         self.parameters.push(ast::Parameter::new(
             name.synthetic("builder"),
             ty.synthetic("builder").into(),
@@ -110,7 +111,7 @@ impl FunctionBuilder<'module> {
         } = self;
 
         let mut function = ast::Function::new(
-            ast::ident(name).synthetic("builder"),
+            ast::ident(Cow::Borrowed(name)).synthetic("builder"),
             ast::Parameters::new(parameters),
             ret.unwrap_or(Type::Void.synthetic("builder")),
             ast::Block::new(expressions),
@@ -129,7 +130,7 @@ pub struct ExpressionBuilder;
 
 impl ExpressionBuilder {
     pub fn variable(self, name: &'static str) -> ast::Expression<'static> {
-        ast::Expression::VariableAccess(ast::ident(name).synthetic("builder"))
+        ast::Expression::VariableAccess(ast::ident(Cow::Borrowed(name)).synthetic("builder"))
     }
 
     pub fn i32(self, integer: i32) -> ast::Expression<'static> {

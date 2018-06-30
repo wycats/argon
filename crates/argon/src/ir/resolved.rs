@@ -1,5 +1,6 @@
 use super::annotated;
 use crate::{ast, FunctionModifiers, MathOperator, Spanned, Type, UnifyTable};
+use std::borrow::Borrow;
 
 #[derive(Debug)]
 pub struct Module<'input> {
@@ -120,7 +121,7 @@ impl ResolveFunction<'module> {
         }
 
         Ok(Function {
-            name: func.name.as_ref(),
+            name: func.name.borrow(),
             params,
             symbols,
             ret,
@@ -133,7 +134,7 @@ impl ResolveFunction<'module> {
         let expr = match expr {
             ast::Expression::Const(constant) => Expression::Const(*constant),
             ast::Expression::VariableAccess(id) => {
-                let local = self.func.mappings.get(id.node.name).unwrap();
+                let local = self.func.mappings.get(id.node.name()).unwrap();
                 Expression::VariableAccess(*local)
             }
             ast::Expression::Binary(operator, tok, box ast::BinaryExpression { lhs, rhs }) => {

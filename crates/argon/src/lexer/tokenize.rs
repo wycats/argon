@@ -1,6 +1,7 @@
 use super::Tok;
 use crate::CompileError;
 use nan_preserving_float::F64;
+use std::borrow::Cow;
 use unicode_xid::UnicodeXID;
 
 lazy_static! {
@@ -76,7 +77,7 @@ impl Lexer<'input> {
         self.rest = &self.rest[size..];
     }
 
-    fn consume_token(&mut self) -> (usize, &'input str, usize) {
+    fn consume_token(&mut self) -> (usize, Cow<'input, str>, usize) {
         // slice off the accumulated token characters
         let token = &self.token_start[..self.token_size];
 
@@ -88,21 +89,21 @@ impl Lexer<'input> {
         // reset the token size
         self.token_size = 0;
 
-        (start_pos, token, self.pos)
+        (start_pos, Cow::Borrowed(token), self.pos)
     }
 
     fn finalize_current(
         &mut self,
         size: usize,
         next_state: LexerState,
-    ) -> (usize, &'input str, usize) {
+    ) -> (usize, Cow<'input, str>, usize) {
         let (start_pos, token, end_pos) = self.consume_token();
         self.consume(size);
         self.token_start = self.rest;
         self.state = next_state;
 
         self.trace("-");
-        trace!(target: "wasm::tokenize", "-> token={:?}", Tok::WS(token));
+        trace!(target: "wasm::tokenize", "-> token={:?}", Tok::WS(token.clone()));
         (start_pos, token, end_pos)
     }
 }
@@ -186,7 +187,7 @@ enum LexerState {
 enum LexerNext<'input> {
     WholeToken(usize, Tok<'input>),
     FinalizeButDontEmitToken(usize, LexerState),
-    EmitCurrent(usize, fn(&'input str) -> Tok<'input>, LexerState),
+    EmitCurrent(usize, fn(Cow<'input, str>) -> Tok<'input>, LexerState),
     Transition(usize, LexerState),
     Continue(usize),
     EOF,
@@ -201,7 +202,7 @@ impl LexerNext<'input> {
         LexerNext::Continue(1)
     }
 
-    fn emit<'i>(tok: fn(&'i str) -> Tok<'i>, next_state: LexerState) -> LexerNext<'i> {
+    fn emit<'i>(tok: fn(Cow<'i, str>) -> Tok<'i>, next_state: LexerState) -> LexerNext<'i> {
         LexerNext::EmitCurrent(1, tok, next_state)
     }
 
@@ -230,7 +231,7 @@ impl<'input> LexerNext<'input> {
 
     fn emit_current(
         size: usize,
-        tok: fn(&'input str) -> Tok<'input>,
+        tok: fn(Cow<'input, str>) -> Tok<'input>,
         next_state: LexerState,
     ) -> LexerNext<'input> {
         LexerNext::EmitCurrent(size, tok, next_state)
@@ -323,11 +324,11 @@ impl LexerState {
     }
 }
 
-fn tk_int<'i>(token: &'i str) -> Tok<'i> {
+fn tk_int<'i>(token: Cow<'i, str>) -> Tok<'i> {
     Tok::Int(token.parse().unwrap())
 }
 
-fn tk_float<'i>(token: &'i str) -> Tok<'i> {
+fn tk_float<'i>(token: Cow<'i, str>) -> Tok<'i> {
     Tok::Float(F64::from_float(token.parse().unwrap()))
 }
 
@@ -353,14 +354,17 @@ struct Keywords {
 
 impl Keywords {
     fn new(strings: Vec<(&'static str, Tok<'static>)>) -> Keywords {
-        let tokens = strings.iter().map(|(s, t)| (*s, *t, s.len())).collect();
+        let tokens = strings
+            .iter()
+            .map(|(s, t)| (*s, t.into_owned(), s.len()))
+            .collect();
         Keywords { tokens }
     }
 
     fn match_keyword(&self, rest: &str) -> Option<(Tok<'static>, usize)> {
         for (string, token, len) in &self.tokens {
             if rest.starts_with(string) {
-                return Some((*token, *len));
+                return Some((token.into_owned(), *len));
             }
         }
 

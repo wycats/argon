@@ -1,11 +1,12 @@
 // auto-generated: "lalrpop 0.15.2"
-// sha256: 52353a7ceef3abc4fc4ac9c8caf4f9223b87b2bb04cdc5d172d2e4e6ba
+// sha256: f374b384eb48e3fbdd66a1dd9dd1132e9e317d513ce4ae2a88bb588c010dbab
 use crate::ast;
 use crate::ast::*;
 use crate::ir::*;
 use crate::MathOperator;
 use crate::lexer::Tok;
 use nan_preserving_float::F64;
+use std::borrow::Cow;
 #[allow(unused_extern_crates)]
 extern crate lalrpop_util as __lalrpop_util;
 
@@ -21,6 +22,7 @@ mod __parse__Module {
     use crate::MathOperator;
     use crate::lexer::Tok;
     use nan_preserving_float::F64;
+    use std::borrow::Cow;
     #[allow(unused_extern_crates)]
     extern crate lalrpop_util as __lalrpop_util;
     use super::__ToTriple;
@@ -29,7 +31,7 @@ mod __parse__Module {
      {
         Variant0(Tok<'input>),
         Variant1(F64),
-        Variant2(&'input str),
+        Variant2(Cow<'input, str>),
         Variant3(i32),
         Variant4(Parameter<'input>),
         Variant5(::std::vec::Vec<Parameter<'input>>),
@@ -953,6 +955,17 @@ mod __parse__Module {
             _ => panic!("symbol type mismatch")
         }
     }
+    fn __pop_Variant2<
+      'input,
+    >(
+        __symbols: &mut ::std::vec::Vec<(usize,__Symbol<'input>,usize)>
+    ) -> (usize, Cow<'input, str>, usize)
+     {
+        match __symbols.pop().unwrap() {
+            (__l, __Symbol::Variant2(__v), __r) => (__l, __v, __r),
+            _ => panic!("symbol type mismatch")
+        }
+    }
     fn __pop_Variant6<
       'input,
     >(
@@ -1159,17 +1172,6 @@ mod __parse__Module {
      {
         match __symbols.pop().unwrap() {
             (__l, __Symbol::Variant5(__v), __r) => (__l, __v, __r),
-            _ => panic!("symbol type mismatch")
-        }
-    }
-    fn __pop_Variant2<
-      'input,
-    >(
-        __symbols: &mut ::std::vec::Vec<(usize,__Symbol<'input>,usize)>
-    ) -> (usize, &'input str, usize)
-     {
-        match __symbols.pop().unwrap() {
-            (__l, __Symbol::Variant2(__v), __r) => (__l, __v, __r),
             _ => panic!("symbol type mismatch")
         }
     }
@@ -2609,7 +2611,7 @@ fn __action27<
 fn __action28<
     'input,
 >(
-    (_, id, _): (usize, &'input str, usize),
+    (_, id, _): (usize, Cow<'input, str>, usize),
 ) -> RawIdentifier<'input>
 {
     ident(id)

@@ -7,6 +7,7 @@ use crate::ir::*;
 use crate::MathOperator;
 use crate::lexer::Tok;
 use nan_preserving_float::F64;
+use std::borrow::Cow;
 
 grammar<'input>;
 
@@ -112,10 +113,10 @@ extern {
         "+" => Tok::Add,
         "-" => Tok::Sub,
 
-        "Id" => Tok::Id(<&'input str>),
+        "Id" => Tok::Id(<Cow<'input, str>>),
         "Int" => Tok::Int(<i32>),
         "Float" => Tok::Float(<F64>),
 
-        "WS" => Tok::WS(<&'input str>),
+        "WS" => Tok::WS(<Cow<'input, str>>),
     }
 }

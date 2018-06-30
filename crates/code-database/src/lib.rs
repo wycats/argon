@@ -1,13 +1,21 @@
+#![feature(try_trait)]
+
 #[macro_use]
 extern crate derive_new;
 
 pub mod database;
 pub mod entry;
 pub mod error;
-pub mod file;
 pub mod file_system;
-pub mod path;
 pub mod table;
 pub mod tag;
 
+pub use self::database::{Database, TransactionId};
 pub use self::error::DatabaseError;
+pub use self::file_system::path;
+pub use self::file_system::path::AbsolutePath;
+pub use self::file_system::real_file::RealFile;
+pub use self::file_system::File as FileTrait;
+pub use self::table::LeafTable;
+
+pub type FileTable<F: FileTrait> = LeafTable<crate::file_system::file_entry::FileEntry<F>>;

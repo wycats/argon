@@ -1,4 +1,9 @@
-use crate::path::AbsolutePath;
+pub mod file_entry;
+pub mod path;
+pub mod real_file;
+pub mod watch;
+
+use self::path::AbsolutePath;
 use failure::Error;
 use std::io::prelude::*;
 
@@ -11,7 +16,5 @@ pub trait File {
     type Read: Read + Seek + Send + Sync;
 
     fn path(&self) -> &AbsolutePath;
-    fn revision(&mut self) -> i64;
-    fn valid_for(&mut self, snapshot: i64) -> bool;
     fn read(&mut self) -> Result<Self::Read, Error>;
 }

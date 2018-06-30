@@ -1,26 +1,34 @@
-use codespan::{CodeMap, FileName};
-use crate::file_system::fs::File;
-use crate::file_system::path::AbsolutePath;
-use crate::FileSystem;
+use code_database::{AbsolutePath, Database, FileTrait, RealFile};
+use crate::database::code_table::CodeTable;
 use failure::Error;
-use std::path::PathBuf;
+use std::io::prelude::*;
 
 #[derive(new)]
-pub struct Compilation<FS: FileSystem> {
-    file_system: FS,
-    map: CodeMap,
-}
+pub struct Compilation {}
 
-impl<FS: FileSystem> Compilation<FS> {
+impl Compilation {
     pub fn add(&mut self, path: impl AsRef<str>) -> Result<(), Error> {
-        let path = AbsolutePath::expand(path.as_ref())?;
-        let mut file = self.file_system.read_file(path)?;
-        let mut read = file.read()?;
+        let mut db = Database::new();
+        let mut code = CodeTable::new();
 
-        let mut content = String::new();
-        read.read_to_string(&mut content);
-        self.map.add_filemap(FileName::Real(path), content);
+        let txn = db.begin();
+        let path = AbsolutePath::expand(path)?;
+        let file = RealFile::unwatched(path.clone());
+        db.files_mut().add_entry(file.into_entry(), txn);
+        db.commit();
 
-        unimplemented!()
+        let txn = db.begin();
+        let file = code.get(db.files_mut(), &path, txn)?;
+        db.commit();
+
+        // let path = AbsolutePath::expand(path.as_ref())?;
+        // let mut file = self.file_system.read_file(path)?;
+        // let mut read = file.read()?;
+
+        // let mut content = String::new();
+        // read.read_to_string(&mut content);
+        // self.map.add_filemap(FileName::Real(path), content);
+
+        Ok(())
     }
 }

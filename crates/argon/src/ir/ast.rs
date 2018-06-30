@@ -2,26 +2,47 @@ use crate::compile::math::MathOperator;
 use crate::ir::{FunctionModifiers, Spanned, Type};
 use crate::lexer::Tok;
 use nan_preserving_float::F64;
+use std::borrow::Borrow;
+use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::fmt;
 
-#[derive(PartialEq, Clone, new)]
+#[derive(Clone, PartialEq, new)]
 pub struct RawIdentifier<'input> {
-    pub name: &'input str,
+    pub name: Cow<'input, str>,
+}
+
+impl RawIdentifier<'input> {
+    pub fn name(&self) -> &str {
+        self.name.borrow()
+    }
+
+    fn into_owned(&self) -> RawIdentifier<'static> {
+        RawIdentifier {
+            name: Cow::Owned(self.name.clone().into_owned()),
+        }
+    }
 }
 
 pub type Identifier<'input> = Spanned<RawIdentifier<'input>>;
 
 impl Spanned<RawIdentifier<'input>> {
-    crate fn as_ref(&self) -> Spanned<&'input str> {
+    crate fn borrow(&self) -> Spanned<&str> {
         Spanned {
-            node: self.node.name,
+            node: self.node.name.borrow(),
             span: self.span,
+        }
+    }
+
+    crate fn into_owned(&self) -> Spanned<RawIdentifier<'static>> {
+        Spanned {
+            node: self.node.into_owned(),
+            span: self.span.clone(),
         }
     }
 }
 
-pub fn ident<'input>(name: &'input str) -> RawIdentifier<'input> {
+pub fn ident<'input>(name: Cow<'input, str>) -> RawIdentifier<'input> {
     RawIdentifier::new(name)
 }
 
@@ -37,6 +58,15 @@ pub struct Parameter<'input> {
     pub ty: Spanned<Type>,
 }
 
+impl Parameter<'input> {
+    fn into_owned(&self) -> Parameter<'static> {
+        Parameter {
+            name: self.name.into_owned(),
+            ty: self.ty.clone(),
+        }
+    }
+}
+
 impl fmt::Debug for Parameter<'input> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}: {:?}", self.name, self.ty)
@@ -50,7 +80,12 @@ pub struct Parameters<'input> {
 
 impl Parameters<'input> {
     crate fn iter(&self) -> impl Iterator<Item = (Spanned<&str>, &Spanned<Type>)> {
-        self.list.iter().map(|arg| (arg.name.as_ref(), &arg.ty))
+        self.list.iter().map(|arg| (arg.name.borrow(), &arg.ty))
+    }
+
+    crate fn into_owned(&self) -> Parameters<'static> {
+        let list = self.list.iter().map(|p| p.into_owned()).collect();
+        Parameters { list }
     }
 }
 
@@ -108,6 +143,26 @@ impl Function<'input> {
         }
     }
 
+    pub fn into_owned(&self) -> Function<'static> {
+        let Function {
+            name,
+            args,
+            ret,
+            body,
+            modifiers,
+            mappings,
+        } = self;
+
+        Function {
+            name: name.into_owned(),
+            args: args.into_owned(),
+            ret: ret.clone(),
+            body: body.into_owned(),
+            modifiers: modifiers.clone(),
+            mappings: mappings.clone(),
+        }
+    }
+
     pub fn exported(mut self) -> Function<'input> {
         self.modifiers.export = true;
         self
@@ -141,9 +196,24 @@ pub struct Module<'input> {
     pub funcs: Vec<Function<'input>>,
 }
 
+impl Module<'input> {
+    pub fn into_owned(&self) -> Module<'static> {
+        Module {
+            funcs: self.funcs.iter().map(|f| f.into_owned()).collect(),
+        }
+    }
+}
+
 #[derive(PartialEq, Clone, new)]
 pub struct Block<'input> {
     pub expressions: Vec<Expression<'input>>,
+}
+
+impl Block<'input> {
+    pub fn into_owned(&self) -> Block<'static> {
+        let expressions = self.expressions.iter().map(|e| e.into_owned()).collect();
+        Block { expressions }
+    }
 }
 
 impl fmt::Debug for Block<'input> {
@@ -257,6 +327,20 @@ impl Expression<'input> {
 
         Expression::Binary(operator, op, expr)
     }
+
+    pub fn into_owned(&self) -> Expression<'static> {
+        use self::Expression::*;
+
+        match self {
+            Const(expr) => Const(expr.clone()),
+            VariableAccess(id) => VariableAccess(id.into_owned()),
+            Binary(op, spanned, expr) => Binary(
+                op.clone(),
+                spanned.into_owned(),
+                Box::new(expr.into_owned()),
+            ),
+        }
+    }
 }
 
 impl fmt::Debug for Expression<'input> {
@@ -277,6 +361,15 @@ impl fmt::Debug for Expression<'input> {
 pub struct BinaryExpression<'input> {
     pub lhs: Expression<'input>,
     pub rhs: Expression<'input>,
+}
+
+impl BinaryExpression<'input> {
+    pub fn into_owned(&self) -> BinaryExpression<'static> {
+        BinaryExpression {
+            lhs: self.lhs.into_owned(),
+            rhs: self.rhs.into_owned(),
+        }
+    }
 }
 
 impl fmt::Debug for BinaryExpression<'input> {
