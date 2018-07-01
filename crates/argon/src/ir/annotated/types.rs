@@ -60,7 +60,7 @@ impl ConstrainedType {
     }
 }
 
-#[derive(Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub enum InferType {
     Resolved(Spanned<Type>),
     Constrained(ConstrainedType),
@@ -69,7 +69,7 @@ pub enum InferType {
     Variable(TypeVar),
 }
 
-impl fmt::Debug for InferType {
+impl fmt::Display for InferType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             InferType::Resolved(ty) => write!(f, "{:?}", ty),
@@ -92,6 +92,16 @@ impl fmt::Debug for InferType {
 }
 
 impl InferType {
+    crate fn is_same_type(&self, other: &InferType) -> bool {
+        match (self, other) {
+            (
+                InferType::Resolved(Spanned { node: lhs, .. }),
+                InferType::Resolved(Spanned { node: rhs, .. }),
+            ) => lhs == rhs,
+            _ => false,
+        }
+    }
+
     crate fn into_type(self) -> Spanned<Type> {
         match self {
             InferType::Resolved(ty) => ty,

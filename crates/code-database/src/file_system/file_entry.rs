@@ -4,7 +4,7 @@ use crate::entry::Entry;
 use crate::file_system;
 use crate::tag::{DirtyableTag, Tag};
 
-#[derive(new)]
+#[derive(Debug, new)]
 pub struct FileEntry<F: file_system::File> {
     key: AbsolutePath,
     file: F,

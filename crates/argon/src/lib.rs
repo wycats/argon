@@ -26,6 +26,7 @@ pub mod parser;
 pub mod grammar;
 pub mod test_helpers;
 
+pub use self::compilation::Compilation;
 pub use self::compile::*;
 pub use self::grammar::ModuleParser;
 pub use self::ir::*;

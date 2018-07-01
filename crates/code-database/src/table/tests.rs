@@ -1,9 +1,7 @@
-use crate::database::{Database, TableId, TransactionId};
+use crate::database::{Database, TransactionId};
 use crate::entry::Entry;
-use crate::table::mapped::MapResult;
-use crate::table::{map, EntryId};
+use crate::table::EntryId;
 use crate::tag::Tag;
-use std::cell::Cell;
 use std::option::NoneError;
 
 use super::*;
@@ -15,7 +13,7 @@ impl Tag for StaticTag {
         0
     }
 
-    fn is_valid(&self, snapshot: usize) -> bool {
+    fn is_valid(&self, _snapshot: usize) -> bool {
         true
     }
 }
@@ -33,11 +31,11 @@ impl Entry for &'static str {
         StaticTag
     }
 
-    fn value(&self, transaction: TransactionId) -> &&'static str {
+    fn value(&self, _transaction: TransactionId) -> &&'static str {
         self
     }
 
-    fn value_mut(&mut self, transaction: TransactionId) -> &mut &'static str {
+    fn value_mut(&mut self, _transaction: TransactionId) -> &mut &'static str {
         self
     }
 
@@ -196,48 +194,3 @@ fn test_storage() -> Result<(), NoneError> {
 
     Ok(())
 }
-
-struct Uppercase {
-    key: &'static str,
-    tag: Cell<Box<Tag>>,
-}
-
-impl Uppercase {
-    fn compute(&self, table: LeafTable<&'static str>, transaction: TransactionId) -> String {
-        let tag = table.get_entry_tag(self.key).unwrap();
-        let value = table.get_entry_value(self.key, transaction).unwrap();
-        self.tag.set(Box::new(tag));
-        value.to_uppercase()
-    }
-}
-
-struct Slice {
-    key: &'static str,
-    tag: Cell<Box<Tag>>,
-}
-
-impl Slice {
-    fn compute(&self, table: LeafTable<&'static str>, transaction: TransactionId) -> &str {
-        let tag = table.get_entry_tag(self.key).unwrap();
-        let value = table.get_entry_value(self.key, transaction).unwrap();
-        self.tag.set(Box::new(tag));
-
-        &value[1..]
-    }
-}
-
-// #[test]
-// fn test_mapped() -> Result<(), NoneError> {
-//     let mut database = Database::new();
-//     let mut table = database.new_table(|i| LeafTable::new(i));
-//     let transaction = database.begin();
-
-//     let e1 = table.add_entry("1", transaction);
-//     let e2 = table.add_entry("2", transaction);
-//     let e3 = table.add_entry("3", transaction);
-//     let e4 = table.add_entry("4", transaction);
-
-//     let transaction = database.begin();
-
-//     Ok(())
-// }

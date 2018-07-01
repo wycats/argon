@@ -9,6 +9,7 @@ use std::fmt;
 
 #[derive(Clone, PartialEq, new)]
 pub struct RawIdentifier<'input> {
+    // TODO: Just use offsets and reconstruct the string on demand
     pub name: Cow<'input, str>,
 }
 
@@ -37,6 +38,13 @@ impl Spanned<RawIdentifier<'input>> {
     crate fn into_owned(&self) -> Spanned<RawIdentifier<'static>> {
         Spanned {
             node: self.node.into_owned(),
+            span: self.span.clone(),
+        }
+    }
+
+    crate fn into_spanned_string(&self) -> Spanned<String> {
+        Spanned {
+            node: self.node.name.to_string(),
             span: self.span.clone(),
         }
     }
@@ -348,7 +356,7 @@ impl fmt::Debug for Expression<'input> {
         let value: &dyn fmt::Debug = match self {
             Expression::Const(constant) => constant,
             Expression::VariableAccess(id) => id,
-            Expression::Binary(op, tok, box BinaryExpression { lhs, rhs }) => {
+            Expression::Binary(op, _tok, box BinaryExpression { lhs, rhs }) => {
                 return write!(f, "{:?} {:?} {:?}", lhs, op, rhs);
             }
         };

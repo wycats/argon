@@ -25,15 +25,15 @@ pub enum WatchStrategy {
 pub struct Watch {}
 
 impl Watch {
-    pub fn register(&mut self, path: AbsolutePath, strategy: WatchStrategy) -> WatchKey {
+    pub fn register(&mut self, _path: AbsolutePath, _strategy: WatchStrategy) -> WatchKey {
         unimplemented!()
     }
 
-    pub fn status(&self, key: WatchKey) -> WatchStatus {
+    pub fn status(&self, _key: WatchKey) -> WatchStatus {
         unimplemented!()
     }
 
-    pub fn stop(&self, key: WatchKey) {
+    pub fn stop(&self, _key: WatchKey) {
         unimplemented!()
     }
 

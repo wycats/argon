@@ -1,6 +1,7 @@
 use super::Unify;
 use crate::annotated::{Annotated, TypeVar};
 use crate::infer::{Constraints, Substitution};
+use crate::pos::Spanned;
 use crate::{CompileError, InferType};
 use ena::unify::{InPlaceUnificationTable, UnifyKey, UnifyValue};
 use std::collections::BTreeSet;
@@ -26,8 +27,12 @@ impl UnifyValue for InferType {
 
     fn unify_values(a: &InferType, b: &InferType) -> Result<InferType, CompileError> {
         match (a, b) {
-            (lhs @ InferType::Resolved(..), rhs @ InferType::Resolved(..)) if lhs == rhs => {
-                Ok(lhs.clone())
+            (
+                InferType::Resolved(lhs @ Spanned { .. }),
+                InferType::Resolved(rhs @ Spanned { .. }),
+            ) if lhs.node == rhs.node =>
+            {
+                Ok(InferType::Resolved(lhs.clone()))
             }
 
             (InferType::Variable(..), other @ InferType::Resolved(..)) => Ok(other.clone()),

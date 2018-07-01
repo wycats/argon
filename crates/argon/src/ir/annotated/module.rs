@@ -4,15 +4,12 @@ use crate::infer::Constraints;
 use crate::ir::resolved;
 
 #[derive(Debug)]
-crate struct Module<'input> {
-    crate funcs: Vec<Function<'input>>,
+crate struct Module {
+    crate funcs: Vec<Function>,
 }
 
-impl Module<'input> {
-    crate fn from(
-        resolved::Module { funcs }: resolved::Module<'input>,
-        vars: &mut UnifyTable,
-    ) -> Module<'input> {
+impl Module {
+    crate fn from(resolved::Module { funcs }: resolved::Module, vars: &mut UnifyTable) -> Module {
         let funcs = funcs
             .into_iter()
             .map(|func| Function::from(func, vars))

@@ -1,17 +1,18 @@
 use super::annotated;
-use crate::{ast, FunctionModifiers, MathOperator, Spanned, Type, UnifyTable};
-use std::borrow::Borrow;
+use crate::{ast, FunctionModifiers, MathOperator, Spanned, SpannedItem, Type, UnifyTable};
+use failure::Fail;
+use std::fmt;
 
 #[derive(Debug)]
-pub struct Module<'input> {
-    pub funcs: Vec<Function<'input>>,
+pub struct Module {
+    pub funcs: Vec<Function>,
 }
 
 #[derive(Debug)]
-pub struct Function<'input> {
-    pub name: Spanned<&'input str>,
+pub struct Function {
+    pub name: Spanned<String>,
     pub params: Vec<Spanned<Type>>,
-    pub symbols: Vec<Spanned<&'input str>>,
+    pub symbols: Vec<Spanned<String>>,
     pub ret: Spanned<Type>,
     pub body: Block,
     pub modifiers: FunctionModifiers,
@@ -27,7 +28,7 @@ pub enum Expression {
     Const(ast::ConstExpression),
     VariableAccess(u32),
     Binary {
-        operator: MathOperator,
+        operator: Spanned<MathOperator>,
         lhs: Box<Expression>,
         rhs: Box<Expression>,
     },
@@ -62,20 +63,20 @@ impl Expression {
     }
 }
 
-crate fn resolve_module_names(
-    module: &'input ast::Module<'input>,
-) -> Result<Module<'input>, ResolveError> {
+crate fn resolve_module_names<'a, 'input: 'a>(
+    module: &'a ast::Module<'input>,
+) -> Result<Module, ResolveError> {
     let resolver = ResolveModule { module };
     resolver.resolve()
 }
 
-struct ResolveModule<'input> {
-    module: &'input ast::Module<'input>,
+struct ResolveModule<'a, 'input: 'a> {
+    module: &'a ast::Module<'input>,
 }
 
-impl ResolveModule<'input> {
-    fn resolve(&self) -> Result<Module<'input>, ResolveError> {
-        let funcs: Result<Vec<Function<'input>>, ResolveError> = self
+impl<'a, 'input: 'a> ResolveModule<'a, 'input> {
+    fn resolve(&self) -> Result<Module, ResolveError> {
+        let funcs: Result<Vec<Function>, ResolveError> = self
             .module
             .funcs
             .iter()
@@ -88,27 +89,35 @@ impl ResolveModule<'input> {
     fn resolve_function(
         &self,
         func: &'input ast::Function<'input>,
-    ) -> Result<Function<'input>, ResolveError> {
+    ) -> Result<Function, ResolveError> {
         ResolveFunction { func }.resolve()
     }
 }
 
-struct ResolveFunction<'module> {
-    func: &'module ast::Function<'module>,
+struct ResolveFunction<'a, 'module: 'a> {
+    func: &'a ast::Function<'module>,
 }
 
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub enum ResolveError {}
 
-impl ResolveFunction<'module> {
-    fn resolve(&self) -> Result<Function<'module>, ResolveError> {
+impl fmt::Display for ResolveError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "ResolveError")
+    }
+}
+
+impl Fail for ResolveError {}
+
+impl<'a, 'module: 'a> ResolveFunction<'a, 'module> {
+    fn resolve(&self) -> Result<Function, ResolveError> {
         let ResolveFunction { func, .. } = self;
 
         let mut symbols = vec![];
         let mut params = vec![];
 
         for (name, ty) in func.args.iter() {
-            symbols.push(name);
+            symbols.push(name.to_spanned_string());
             params.push(ty.clone());
         }
 
@@ -121,7 +130,7 @@ impl ResolveFunction<'module> {
         }
 
         Ok(Function {
-            name: func.name.borrow(),
+            name: func.name.into_spanned_string(),
             params,
             symbols,
             ret,
@@ -142,7 +151,7 @@ impl ResolveFunction<'module> {
                 let rhs = self.resolve_expression(rhs)?;
 
                 Expression::Binary {
-                    operator: *operator,
+                    operator: (*operator).copy_span(&tok),
                     lhs: box lhs,
                     rhs: box rhs,
                 }

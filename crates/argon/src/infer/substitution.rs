@@ -22,7 +22,7 @@ impl Substitution {
         self.solutions.insert(key, ty);
     }
 
-    crate fn apply_module(&self, module: annotated::Module<'input>) -> annotated::Module<'input> {
+    crate fn apply_module(&self, module: annotated::Module) -> annotated::Module {
         let funcs = module
             .funcs
             .into_iter()
@@ -41,8 +41,8 @@ impl Substitution {
             ret,
             body,
             modifiers,
-        }: annotated::Function<'input>,
-    ) -> annotated::Function<'input> {
+        }: annotated::Function,
+    ) -> annotated::Function {
         annotated::Function {
             name,
             params,

@@ -25,13 +25,13 @@ crate fn compile_expression(
             box rhs,
         } => {
             debug_assert!(
-                lhs.ty == rhs.ty,
-                "inference bug: the left and right side of a binary operator must be the same type"
+                lhs.ty.is_same_type(&rhs.ty),
+                "inference bug: the left and right side of a binary operator must be the same type, got {:?} + {:?}", lhs, rhs
             );
 
             compile_expression(body, lhs, function);
             compile_expression(body, rhs, function);
-            body.push(math_op(*operator, lhs.ty.as_math()));
+            body.push(math_op((*operator).node, lhs.ty.as_math()));
         }
     }
 }

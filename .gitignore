@@ -2,3 +2,4 @@
 **/*.rs.bk
 .cargo
 .vscode
+crates/argon/src/grammar.report

@@ -38,10 +38,6 @@ pub enum Tok<'input> {
 }
 
 impl Tok<'input> {
-    fn ws(s: &'input str) -> Tok<'input> {
-        Tok::WS(Cow::Borrowed(s))
-    }
-
     pub fn into_owned(&self) -> Tok<'static> {
         use self::Tok::*;
 

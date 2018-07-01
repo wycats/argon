@@ -1,53 +1,54 @@
 #![allow(unused)]
 #![warn(unused_imports)]
 
+use super::ast_table::AstTable;
 use super::code_table::CodeTable;
+use super::typed_table::TypedTable;
 use code_database::{AbsolutePath, FileTable, FileTrait, TransactionId};
-use crate::ir::ast::Module;
-use crate::parser::parse;
+use crate::annotated;
+use crate::compile::function::compile_function;
 use failure::Error;
+use parity_wasm::{builder, elements};
 use std::collections::btree_map::Entry as BTreeEntry;
 use std::collections::BTreeMap;
 
-#[derive(Debug)]
 crate struct Entry {
-    module: Module<'static>,
+    module: elements::Module,
     last_revision: usize,
 }
 
-crate struct AstTable {
+crate struct WasmTable {
     index: BTreeMap<AbsolutePath, Entry>,
 }
 
-impl AstTable {
-    crate fn new() -> AstTable {
-        AstTable {
+impl WasmTable {
+    crate fn new() -> WasmTable {
+        WasmTable {
             index: BTreeMap::new(),
         }
     }
 
-    crate fn get_revision(
-        &self,
-        code_table: &mut CodeTable,
-        file_table: &mut FileTable<impl FileTrait>,
-        key: &AbsolutePath,
-    ) -> Option<usize> {
-        code_table.get_revision(file_table, key)
-    }
-
     crate fn get(
-        &mut self,
+        &'a mut self,
         file_table: &mut FileTable<impl FileTrait>,
         code_table: &mut CodeTable,
+        ast_table: &mut AstTable,
+        typed_table: &mut TypedTable,
         key: &AbsolutePath,
         transaction: TransactionId,
-    ) -> Result<Option<&Module<'static>>, Error> {
-        self.refresh_cache(key, file_table, code_table, transaction)?;
+    ) -> Result<Option<&'a elements::Module>, Error> {
+        self.refresh_cache(
+            key,
+            file_table,
+            code_table,
+            ast_table,
+            typed_table,
+            transaction,
+        )?;
 
-        match self.index.get(key) {
-            None => Ok(None),
-            Some(entry) => Ok(Some(&entry.module)),
-        }
+        let entry = self.index.get(key).unwrap();
+
+        Ok(Some(&entry.module))
     }
 
     fn refresh_cache(
@@ -55,6 +56,8 @@ impl AstTable {
         key: &AbsolutePath,
         file_table: &mut FileTable<impl FileTrait>,
         code_table: &mut CodeTable,
+        ast_table: &mut AstTable,
+        typed_table: &mut TypedTable,
         transaction: TransactionId,
     ) -> Result<(), Error> {
         match self.index.entry(key.clone()) {
@@ -63,9 +66,12 @@ impl AstTable {
                     BTreeEntry::Vacant(vacant),
                     file_table,
                     code_table,
+                    ast_table,
+                    typed_table,
                     transaction,
                 )?;
             }
+
             BTreeEntry::Occupied(occupied) => {
                 let last_revision = {
                     let entry = occupied.get();
@@ -77,6 +83,8 @@ impl AstTable {
                         BTreeEntry::Occupied(occupied),
                         file_table,
                         code_table,
+                        ast_table,
+                        typed_table,
                         transaction,
                     )?;
                 }
@@ -91,26 +99,22 @@ fn fill_cache(
     entry: BTreeEntry<AbsolutePath, Entry>,
     file_table: &mut FileTable<impl FileTrait>,
     code_table: &mut CodeTable,
+    ast_table: &mut AstTable,
+    typed_table: &mut TypedTable,
     transaction: TransactionId,
 ) -> Result<(), Error> {
-    println!("Filling cache {:?}", entry);
+    let module: &annotated::Module =
+        match typed_table.get(file_table, code_table, ast_table, entry.key(), transaction)? {
+            None => return Ok(()),
+            Some(module) => module,
+        };
 
-    let key = entry.key().clone();
-    let file = match code_table.get(file_table, entry.key(), transaction)? {
-        None => return Ok(()),
-        Some(file) => file,
-    }.clone();
-
-    let src = file.src().to_string();
-    let parsed = parse(&src)?;
-    let parsed = parsed.into_owned();
+    let module = compile(module)?;
 
     let new_entry = Entry {
-        module: parsed,
+        module,
         last_revision: 0,
     };
-
-    println!("Inserting into {:?}", entry);
 
     match entry {
         BTreeEntry::Occupied(mut occupied) => {
@@ -122,4 +126,33 @@ fn fill_cache(
     };
 
     Ok(())
+}
+
+struct CodeLocation {
+    /// Location (index in 'functions' section) of the signature
+    signature: u32,
+    /// Location (index in the 'code' section) of the body
+    _body: u32,
+}
+
+fn compile(module: &annotated::Module) -> Result<elements::Module, Error> {
+    let mut builder = builder::module();
+
+    for func in &module.funcs {
+        let function = builder::function();
+        let function = compile_function(function, func);
+        let location: CodeLocation =
+            unsafe { std::mem::transmute(builder.push_function(function)) };
+
+        if func.modifiers.export {
+            builder = builder
+                .export()
+                .field(&func.name.node)
+                .internal()
+                .func(location.signature)
+                .build();
+        }
+    }
+
+    Ok(builder.build())
 }

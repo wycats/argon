@@ -1,4 +1,5 @@
 use failure::{Error, ResultExt};
+use std::borrow::Borrow;
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -14,9 +15,12 @@ impl AbsolutePath {
         &self.0
     }
 
-    pub fn expand(filename: impl AsRef<str>) -> Result<AbsolutePath, Error> {
+    pub fn expand(filename: impl AsRef<Path>) -> Result<AbsolutePath, Error> {
         let filename = filename.as_ref();
-        let expanded = shellexpand::full(filename).with_context(|_| "shellexpand".to_string())?;
+        let filename_cow = filename.to_string_lossy();
+        let filename_str: &str = filename_cow.borrow();
+
+        let expanded = shellexpand::full(filename_str).with_context(|_| "shellexpand".to_string())?;
 
         let canonical = fs::canonicalize(expanded.as_ref()).with_context(|_| {
             format!(

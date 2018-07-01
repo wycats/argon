@@ -2,6 +2,7 @@ use super::types::InferType;
 use super::Annotated;
 use crate::infer::{Constraint, Constraints};
 use crate::ir::ast;
+use crate::ir::Spanned;
 use crate::MathOperator;
 
 #[derive(Debug)]
@@ -12,7 +13,7 @@ crate enum Expression {
     #[allow(unused)]
     Apply(Box<Annotated<Expression>>, Vec<Annotated<Expression>>),
     Binary {
-        operator: MathOperator,
+        operator: Spanned<MathOperator>,
         lhs: Box<Annotated<Expression>>,
         rhs: Box<Annotated<Expression>>,
     },

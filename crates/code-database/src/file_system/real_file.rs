@@ -4,12 +4,13 @@ use crate::file_system::file_entry::FileEntry;
 use crate::file_system::File;
 use failure::Error;
 
+#[derive(Debug)]
 pub enum Watching {
     Unwatched,
     Watched(WatchKey),
 }
 
-#[derive(new)]
+#[derive(new, Debug)]
 pub struct RealFile {
     path: AbsolutePath,
     watch_status: Watching,

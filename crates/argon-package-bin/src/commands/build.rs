@@ -1,14 +1,12 @@
-use argon::compile_source;
-use argon_package;
+use argon::Compilation;
 use argon_package::package_layout;
 use clap::Arg;
 use crate::thor;
 use crate::thor::{ClapApp, Subcommand, ThorError};
 use failure::ResultExt;
+use parity_wasm::elements::Serialize;
 use std::fs;
 use std::fs::File;
-use std::io::prelude::*;
-use std::io::{copy, Cursor};
 
 pub struct Build;
 
@@ -24,15 +22,15 @@ impl Subcommand for Build {
 
         let details = package_layout(package).with_context(|_| "packagelayout".to_string())?;
 
-        let mut lib = File::open(&details.lib)
-            .with_context(|_| format!("No lib found at {}", &details.lib.display()))?;
+        let mut compilation = Compilation::new();
+        let key = compilation
+            .add(&details.lib)
+            .with_context(|_| "adding path".to_string())?;
 
-        let mut contents = String::new();
-        lib.read_to_string(&mut contents)
-            .with_context(|_| format!("Failed to read {}", &details.lib.display()))?;
-
-        let mut bytes = compile_source(&details.lib, Cursor::new(contents))
-            .with_context(|_| "compiling-source".to_string())?;
+        let module = compilation
+            .get(&key)
+            .with_context(|_| "compiling".to_string())?
+            .unwrap();
 
         let out = details
             .root
@@ -46,7 +44,10 @@ impl Subcommand for Build {
         let mut file =
             File::create(&out).with_context(|_| format!("cannot create {}", &out.display()))?;
 
-        copy(&mut bytes, &mut file).with_context(|_| "write-file".to_string())?;
+        module
+            .clone()
+            .serialize(&mut file)
+            .with_context(|_| "write-file".to_string())?;
 
         Ok(())
     }

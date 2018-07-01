@@ -1,6 +1,7 @@
 use super::constraint::Constraints;
 use super::substitution::Substitution;
 use crate::ir::{InferType, TypeVar};
+use crate::pos::Spanned;
 use crate::CompileError;
 use ena::unify::InPlaceUnificationTable;
 use std::collections::BTreeSet;
@@ -50,15 +51,22 @@ impl UnifyOne<'unify> {
     fn constrain(&mut self, left: &InferType, right: &InferType) -> Result<(), CompileError> {
         trace!(target: "wasm::unify::one", "+constraint {:?} {:?}", left, right);
 
-        match (left, right) {
-            (left @ InferType::Resolved(..), right @ InferType::Resolved(..)) if left == right => {}
+        println!("Constraining {:#?} + {:#?}", left, right);
 
-            (_left @ InferType::Resolved(..), _right @ InferType::Resolved(..)) => {
+        match (left, right) {
+            (
+                InferType::Resolved(Spanned { node: left, .. }),
+                InferType::Resolved(Spanned { node: right, .. }),
+            ) if left == right => {}
+
+            (InferType::Resolved(..), InferType::Resolved(..)) => {
                 return Err(CompileError::Unimplemented)
             }
 
             (InferType::Constrained(c), InferType::Resolved(r)) => {
                 if !c.unifies_ty(&r.node) {
+                    println!("Failed to unify {:?} + {:?}", c, r);
+
                     return Err(CompileError::UnifyError(
                         InferType::Constrained(c.clone()),
                         InferType::Resolved(r.clone()),

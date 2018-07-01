@@ -36,7 +36,7 @@ pub fn compile_module(input: &ast::Module) -> Result<elements::Module, CompileEr
         if func.modifiers.export {
             builder = builder
                 .export()
-                .field(func.name.node)
+                .field(&func.name.node)
                 .internal()
                 .func(location.signature)
                 .build();

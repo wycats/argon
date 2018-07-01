@@ -1,10 +1,5 @@
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-#[derive(new)]
-pub struct Revision {
-    counter: AtomicUsize,
-}
-
 const REVISION: AtomicUsize = AtomicUsize::new(0);
 
 pub trait Tag {

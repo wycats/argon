@@ -12,7 +12,7 @@ pub trait FileSystem {
     fn read_file(&mut self, path: AbsolutePath) -> Result<Self::File, Error>;
 }
 
-pub trait File {
+pub trait File: std::fmt::Debug {
     type Read: Read + Seek + Send + Sync;
 
     fn path(&self) -> &AbsolutePath;

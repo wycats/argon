@@ -5,16 +5,16 @@ use crate::ir::{resolved, Spanned};
 use crate::{FunctionModifiers, Type};
 
 #[derive(Debug)]
-crate struct Function<'input> {
-    crate name: Spanned<&'input str>,
+crate struct Function {
+    crate name: Spanned<String>,
     crate params: Vec<Spanned<Type>>,
-    crate symbols: Vec<Spanned<&'input str>>,
+    crate symbols: Vec<Spanned<String>>,
     crate ret: Spanned<Type>,
     crate body: Annotated<Block>,
     crate modifiers: FunctionModifiers,
 }
 
-impl Function<'input> {
+impl Function {
     crate fn from(
         resolved::Function {
             name,
@@ -23,9 +23,9 @@ impl Function<'input> {
             ret,
             body,
             modifiers,
-        }: resolved::Function<'input>,
+        }: resolved::Function,
         vars: &mut UnifyTable,
-    ) -> Function<'input> {
+    ) -> Function {
         let body = {
             let env = TypeEnv::params(&params);
             Block::from(body, vars, &env)
