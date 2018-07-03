@@ -3,7 +3,7 @@ use crate::infer::unify::UnifyTable;
 use crate::infer::Constraints;
 use crate::ir::resolved;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 crate struct Module {
     crate funcs: Vec<Function>,
 }

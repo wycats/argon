@@ -60,7 +60,7 @@ impl UnifyTable {
 
     crate fn fresh(&mut self) -> InferType {
         let next = self.table.len();
-        trace!(target: "wasm::unify", "Generating <T{}>", next);
+        trace!(target: "argon::unify", "Generating <T{}>", next);
         let ty = InferType::Variable(TypeVar::new(next));
         let key = self.table.new_key(ty.clone());
         self.keys.insert(key);
@@ -73,7 +73,7 @@ impl UnifyTable {
     }
 
     crate fn unify(&self, constraints: Constraints) -> Result<Substitution, CompileError> {
-        trace!(target: "wasm::unify", "Unifying {:#?}", constraints);
+        trace!(target: "argon::unify", "Unifying {:#?}", constraints);
 
         let UnifyTable { table, keys } = self;
 

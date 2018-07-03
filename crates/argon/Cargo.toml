@@ -30,6 +30,7 @@ failure = "0.1.1"
 codespan = "0.1.2"
 shellexpand = "1.0.0"
 code-database = { path = "../code-database" }
+seahash = "3.0.5"
 
 [dev-dependencies]
 wasmi = "0.2.0"

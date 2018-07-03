@@ -27,7 +27,7 @@ impl CodeTable {
 
     crate fn get_revision(
         &self,
-        table: &mut FileTable<impl FileTrait>,
+        table: &FileTable<impl FileTrait>,
         key: &AbsolutePath,
     ) -> Option<usize> {
         table.get_entry_revision(key)
@@ -35,7 +35,7 @@ impl CodeTable {
 
     crate fn is_valid(
         &self,
-        table: &mut FileTable<impl FileTrait>,
+        table: &FileTable<impl FileTrait>,
         key: &AbsolutePath,
         _revision: usize,
     ) -> bool {

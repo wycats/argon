@@ -45,7 +45,7 @@ impl Subcommand for Build {
             File::create(&out).with_context(|_| format!("cannot create {}", &out.display()))?;
 
         module
-            .clone()
+            .into_owned()
             .serialize(&mut file)
             .with_context(|_| "write-file".to_string())?;
 

@@ -6,7 +6,7 @@ use crate::ir::pos::SpannedItem;
 use crate::ir::resolved;
 use crate::Type;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 crate struct Block {
     crate expressions: Vec<Annotated<Expression>>,
 }

@@ -17,6 +17,7 @@ extern crate lazy_static;
 pub mod compilation;
 pub mod compile;
 pub mod database;
+pub mod debuggable;
 crate mod infer;
 pub mod ir;
 pub mod lexer;
@@ -24,15 +25,12 @@ pub mod parser;
 
 #[allow(warnings)]
 pub mod grammar;
-pub mod test_helpers;
 
 pub use self::compilation::Compilation;
 pub use self::compile::*;
 pub use self::grammar::ModuleParser;
 pub use self::ir::*;
 pub use self::parser::ParseError;
-
-pub use self::test_helpers::AstBuilder;
 
 crate use self::infer::unify::UnifyTable;
 

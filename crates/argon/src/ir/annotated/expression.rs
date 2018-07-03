@@ -5,7 +5,7 @@ use crate::ir::ast;
 use crate::ir::Spanned;
 use crate::MathOperator;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 crate enum Expression {
     Const(ast::ConstExpression),
     VariableAccess(u32),

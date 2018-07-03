@@ -25,19 +25,24 @@ pub struct ByteSpan {
     source: Id,
 }
 
+impl Span {
+    pub fn to_codespan_span(&self) -> codespan::ByteSpan {
+        use self::Span::*;
+
+        match self {
+            ByteSpan(span) => codespan::Span::new(
+                codespan::ByteIndex(span.start as u32),
+                codespan::ByteIndex(span.end as u32),
+            ),
+            _ => unimplemented!("turning synthetic spans into codespans"),
+        }
+    }
+}
+
 #[derive(Debug, Eq, PartialEq, Copy, Clone, Hash, Ord, PartialOrd)]
 pub struct Spanned<Node: PartialEq + Debug> {
     crate node: Node,
     crate span: Span,
-}
-
-impl Spanned<&str> {
-    crate fn to_spanned_string(&self) -> Spanned<String> {
-        Spanned {
-            node: self.node.to_string(),
-            span: self.span,
-        }
-    }
 }
 
 impl<Node: PartialEq + fmt::Display + fmt::Debug> fmt::Display for Spanned<Node> {

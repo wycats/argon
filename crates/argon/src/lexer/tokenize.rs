@@ -1,7 +1,8 @@
 use super::Tok;
+use crate::ir::pos::SpannedItem;
+use crate::lexer::Token;
 use crate::CompileError;
 use nan_preserving_float::F64;
-use std::borrow::Cow;
 use unicode_xid::UnicodeXID;
 
 lazy_static! {
@@ -53,11 +54,11 @@ impl Lexer<'input> {
         }
     }
 
-    fn trace(&mut self, prefix: &str) {
-        trace!(target: "wasm::tokenize", "input={:?}", self.input);
+    fn trace(&self, prefix: &str) {
+        trace!(target: "argon::tokenize", "input={:?}", self.input);
 
         trace!(
-            target: "wasm::tokenize",
+            target: "argon::tokenize",
             "{} rest={:?} token-start={:?} token-size={:?} state={:?}",
             prefix,
             self.rest,
@@ -77,10 +78,7 @@ impl Lexer<'input> {
         self.rest = &self.rest[size..];
     }
 
-    fn consume_token(&mut self) -> (usize, Cow<'input, str>, usize) {
-        // slice off the accumulated token characters
-        let token = &self.token_start[..self.token_size];
-
+    fn consume_token(&mut self, size: usize) -> (usize, usize) {
         // get the starting position
         let start_pos = self.start_pos;
         // and advance it to the current position
@@ -89,29 +87,29 @@ impl Lexer<'input> {
         // reset the token size
         self.token_size = 0;
 
-        (start_pos, Cow::Borrowed(token), self.pos)
+        let ret = (start_pos, self.pos);
+
+        self.consume(size);
+
+        ret
     }
 
-    fn finalize_current(
-        &mut self,
-        size: usize,
-        next_state: LexerState,
-    ) -> (usize, Cow<'input, str>, usize) {
-        let (start_pos, token, end_pos) = self.consume_token();
-        self.consume(size);
+    fn finalize_current(&mut self, size: usize, next_state: LexerState) -> (usize, &str, usize) {
+        let token = &self.token_start[..self.token_size];
         self.token_start = self.rest;
         self.state = next_state;
+        let (start_pos, end_pos) = self.consume_token(size);
 
         self.trace("-");
-        trace!(target: "wasm::tokenize", "-> token={:?}", Tok::WS(token.clone()));
+        trace!(target: "argon::tokenize", "-> token=WS body={:?}", token.clone());
         (start_pos, token, end_pos)
     }
 }
 
 impl Iterator for Lexer<'input> {
-    type Item = Result<(usize, Tok<'input>, usize), CompileError>;
+    type Item = Result<(usize, Token, usize), CompileError>;
 
-    fn next(&mut self) -> Option<Result<(usize, Tok<'input>, usize), CompileError>> {
+    fn next(&mut self) -> Option<Result<(usize, Token, usize), CompileError>> {
         loop {
             let next = {
                 let Lexer { state, rest, .. } = self;
@@ -120,7 +118,7 @@ impl Iterator for Lexer<'input> {
             };
 
             self.trace("+");
-            trace!(target: "wasm::tokenize", "-> {:?}", next);
+            trace!(target: "argon::tokenize", "-> {:?}", next);
 
             let next = match next {
                 Ok(n) => n,
@@ -141,13 +139,13 @@ impl Iterator for Lexer<'input> {
                     self.token_start = self.rest;
 
                     self.trace("-");
-                    trace!(target: "wasm::tokenize", "-> token={:?}", token);
-                    return Some(Ok((start, token, end)));
+                    trace!(target: "argon::tokenize", "-> token={:?}", token);
+                    return Some(Ok((start, token.spanned(start, end), end)));
                 }
 
                 LexerNext::EmitCurrent(size, tok, next_state) => {
                     let (start, token, end) = self.finalize_current(size, next_state);
-                    return Some(Ok((start, tok(token), end)));
+                    return Some(Ok((start, tok(token).spanned(start, end), end)));
                 }
 
                 LexerNext::FinalizeButDontEmitToken(size, next_state) => {
@@ -184,33 +182,33 @@ enum LexerState {
 }
 
 #[derive(Debug)]
-enum LexerNext<'input> {
-    WholeToken(usize, Tok<'input>),
+enum LexerNext<'a> {
+    WholeToken(usize, Tok),
     FinalizeButDontEmitToken(usize, LexerState),
-    EmitCurrent(usize, fn(Cow<'input, str>) -> Tok<'input>, LexerState),
+    EmitCurrent(usize, fn(&'a str) -> Tok, LexerState),
     Transition(usize, LexerState),
     Continue(usize),
     EOF,
 }
 
-impl LexerNext<'input> {
-    fn finalize_no_emit(next_state: LexerState) -> LexerNext<'input> {
+impl LexerNext<'a> {
+    fn finalize_no_emit(next_state: LexerState) -> LexerNext<'a> {
         LexerNext::FinalizeButDontEmitToken(1, next_state)
     }
 
-    fn consume() -> LexerNext<'input> {
+    fn consume() -> LexerNext<'a> {
         LexerNext::Continue(1)
     }
 
-    fn emit<'i>(tok: fn(Cow<'i, str>) -> Tok<'i>, next_state: LexerState) -> LexerNext<'i> {
+    fn emit(tok: fn(&str) -> Tok, next_state: LexerState) -> LexerNext<'a> {
         LexerNext::EmitCurrent(1, tok, next_state)
     }
 
-    fn transition_to(next_state: LexerState) -> LexerNext<'input> {
+    fn transition_to(next_state: LexerState) -> LexerNext<'a> {
         LexerNext::Transition(1, next_state)
     }
 
-    fn reconsume(self) -> LexerNext<'input> {
+    fn reconsume(self) -> LexerNext<'a> {
         match self {
             LexerNext::WholeToken(_, tok) => LexerNext::WholeToken(0, tok),
             LexerNext::FinalizeButDontEmitToken(_, tok) => {
@@ -224,26 +222,18 @@ impl LexerNext<'input> {
     }
 }
 
-impl<'input> LexerNext<'input> {
-    fn emit_token(t: Tok<'input>, size: usize) -> LexerNext<'input> {
+impl<'a> LexerNext<'a> {
+    fn emit_token(t: Tok, size: usize) -> LexerNext<'a> {
         LexerNext::WholeToken(size, t)
     }
 
-    fn emit_current(
-        size: usize,
-        tok: fn(Cow<'input, str>) -> Tok<'input>,
-        next_state: LexerState,
-    ) -> LexerNext<'input> {
+    fn emit_current(size: usize, tok: fn(&str) -> Tok, next_state: LexerState) -> LexerNext<'a> {
         LexerNext::EmitCurrent(size, tok, next_state)
     }
 }
 
 impl LexerState {
-    fn next<'input>(
-        &self,
-        c: Option<char>,
-        rest: &'input str,
-    ) -> Result<LexerNext<'input>, CompileError> {
+    fn next<'input>(&self, c: Option<char>, rest: &'input str) -> Result<LexerNext, CompileError> {
         let out = match self {
             LexerState::Top => match c {
                 None => LexerNext::EOF,
@@ -274,23 +264,23 @@ impl LexerState {
             },
 
             LexerState::StartIdent => match c {
-                None => LexerNext::emit(Tok::Id, LexerState::Top).reconsume(),
+                None => LexerNext::emit(tk_id, LexerState::Top).reconsume(),
                 Some(c) => {
                     if UnicodeXID::is_xid_continue(c) {
                         LexerNext::transition_to(LexerState::ContinueIdent)
                     } else {
-                        LexerNext::emit(Tok::Id, LexerState::Top).reconsume()
+                        LexerNext::emit(tk_id, LexerState::Top).reconsume()
                     }
                 }
             },
 
             LexerState::ContinueIdent => match c {
-                None => LexerNext::emit(Tok::Id, LexerState::Top).reconsume(),
+                None => LexerNext::emit(tk_id, LexerState::Top).reconsume(),
                 Some(c) => {
                     if UnicodeXID::is_xid_continue(c) {
                         LexerNext::consume()
                     } else {
-                        LexerNext::emit(Tok::Id, LexerState::Top).reconsume()
+                        LexerNext::emit(tk_id, LexerState::Top).reconsume()
                     }
                 }
             },
@@ -324,11 +314,15 @@ impl LexerState {
     }
 }
 
-fn tk_int<'i>(token: Cow<'i, str>) -> Tok<'i> {
+fn tk_int(token: &str) -> Tok {
     Tok::Int(token.parse().unwrap())
 }
 
-fn tk_float<'i>(token: Cow<'i, str>) -> Tok<'i> {
+fn tk_id(token: &str) -> Tok {
+    Tok::id(token)
+}
+
+fn tk_float(token: &str) -> Tok {
     Tok::Float(F64::from_float(token.parse().unwrap()))
 }
 
@@ -337,34 +331,31 @@ struct Matchers {
 }
 
 impl Matchers {
-    fn keywords(keywords: &[(&'static str, Tok<'static>)]) -> Matchers {
+    fn keywords(keywords: &[(&'static str, Tok)]) -> Matchers {
         Matchers {
             keywords: Keywords::new(keywords.into()),
         }
     }
 
-    fn match_keyword(&self, rest: &str) -> Option<(Tok<'static>, usize)> {
+    fn match_keyword(&self, rest: &str) -> Option<(Tok, usize)> {
         self.keywords.match_keyword(rest)
     }
 }
 
 struct Keywords {
-    tokens: Vec<(&'static str, Tok<'static>, usize)>,
+    tokens: Vec<(&'static str, Tok, usize)>,
 }
 
 impl Keywords {
-    fn new(strings: Vec<(&'static str, Tok<'static>)>) -> Keywords {
-        let tokens = strings
-            .iter()
-            .map(|(s, t)| (*s, t.into_owned(), s.len()))
-            .collect();
+    fn new(strings: Vec<(&'static str, Tok)>) -> Keywords {
+        let tokens = strings.iter().map(|(s, t)| (*s, *t, s.len())).collect();
         Keywords { tokens }
     }
 
-    fn match_keyword(&self, rest: &str) -> Option<(Tok<'static>, usize)> {
+    fn match_keyword(&self, rest: &str) -> Option<(Tok, usize)> {
         for (string, token, len) in &self.tokens {
             if rest.starts_with(string) {
-                return Some((token.into_owned(), *len));
+                return Some((*token, *len));
             }
         }
 

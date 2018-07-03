@@ -1,121 +1,51 @@
 use crate::compile::math::MathOperator;
 use crate::ir::{FunctionModifiers, Spanned, Type};
-use crate::lexer::Tok;
+use crate::lexer::{IdentifierId, Tok, Token};
 use nan_preserving_float::F64;
-use std::borrow::Borrow;
-use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::fmt;
 
-#[derive(Clone, PartialEq, new)]
-pub struct RawIdentifier<'input> {
-    // TODO: Just use offsets and reconstruct the string on demand
-    pub name: Cow<'input, str>,
-}
-
-impl RawIdentifier<'input> {
-    pub fn name(&self) -> &str {
-        self.name.borrow()
-    }
-
-    fn into_owned(&self) -> RawIdentifier<'static> {
-        RawIdentifier {
-            name: Cow::Owned(self.name.clone().into_owned()),
-        }
-    }
-}
-
-pub type Identifier<'input> = Spanned<RawIdentifier<'input>>;
-
-impl Spanned<RawIdentifier<'input>> {
-    crate fn borrow(&self) -> Spanned<&str> {
-        Spanned {
-            node: self.node.name.borrow(),
-            span: self.span,
-        }
-    }
-
-    crate fn into_owned(&self) -> Spanned<RawIdentifier<'static>> {
-        Spanned {
-            node: self.node.into_owned(),
-            span: self.span.clone(),
-        }
-    }
-
-    crate fn into_spanned_string(&self) -> Spanned<String> {
-        Spanned {
-            node: self.node.name.to_string(),
-            span: self.span.clone(),
-        }
-    }
-}
-
-pub fn ident<'input>(name: Cow<'input, str>) -> RawIdentifier<'input> {
-    RawIdentifier::new(name)
-}
-
-impl fmt::Debug for RawIdentifier<'input> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.name)
-    }
-}
+pub type Identifier = Token;
 
 #[derive(PartialEq, Clone, new)]
-pub struct Parameter<'input> {
-    pub name: Identifier<'input>,
+pub struct Parameter {
+    pub name: Identifier,
     pub ty: Spanned<Type>,
 }
 
-impl Parameter<'input> {
-    fn into_owned(&self) -> Parameter<'static> {
-        Parameter {
-            name: self.name.into_owned(),
-            ty: self.ty.clone(),
-        }
-    }
-}
-
-impl fmt::Debug for Parameter<'input> {
+impl fmt::Debug for Parameter {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}: {:?}", self.name, self.ty)
     }
 }
 
 #[derive(PartialEq, Clone)]
-pub struct Parameters<'input> {
-    pub list: Vec<Parameter<'input>>,
+pub struct Parameters {
+    pub list: Vec<Parameter>,
 }
 
-impl Parameters<'input> {
-    crate fn iter(&self) -> impl Iterator<Item = (Spanned<&str>, &Spanned<Type>)> {
-        self.list.iter().map(|arg| (arg.name.borrow(), &arg.ty))
-    }
-
-    crate fn into_owned(&self) -> Parameters<'static> {
-        let list = self.list.iter().map(|p| p.into_owned()).collect();
-        Parameters { list }
+impl Parameters {
+    crate fn iter(&self) -> impl Iterator<Item = (Token, &Spanned<Type>)> {
+        self.list.iter().map(|arg| (arg.name, &arg.ty))
     }
 }
 
-impl fmt::Debug for Parameters<'input> {
+impl fmt::Debug for Parameters {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_list().entries(self.list.iter()).finish()
     }
 }
 
-impl Parameters<'input> {
-    pub fn new(list: Vec<Parameter<'input>>) -> Parameters<'input> {
+impl Parameters {
+    pub fn new(list: Vec<Parameter>) -> Parameters {
         Parameters { list }
     }
 
-    crate fn empty() -> Parameters<'input> {
+    crate fn empty() -> Parameters {
         Parameters { list: vec![] }
     }
 
-    crate fn from_parser(
-        arg: Parameter<'input>,
-        rest: Vec<Parameter<'input>>,
-    ) -> Parameters<'input> {
+    crate fn from_parser(arg: Parameter, rest: Vec<Parameter>) -> Parameters {
         let mut list = vec![arg];
         list.extend(rest);
         Parameters { list }
@@ -123,22 +53,17 @@ impl Parameters<'input> {
 }
 
 #[derive(PartialEq, Clone)]
-pub struct Function<'input> {
-    pub name: Identifier<'input>,
-    pub args: Parameters<'input>,
+pub struct Function {
+    pub name: Identifier,
+    pub args: Parameters,
     pub ret: Spanned<Type>,
-    pub body: Block<'input>,
+    pub body: Block,
     pub modifiers: FunctionModifiers,
-    crate mappings: BTreeMap<String, u32>,
+    crate mappings: BTreeMap<IdentifierId, u32>,
 }
 
-impl Function<'input> {
-    pub fn new(
-        name: Identifier<'input>,
-        args: Parameters<'input>,
-        ret: Spanned<Type>,
-        body: Block<'input>,
-    ) -> Function<'input> {
+impl Function {
+    pub fn new(name: Identifier, args: Parameters, ret: Spanned<Type>, body: Block) -> Function {
         let mappings = function_mappings(&args);
 
         Function {
@@ -151,43 +76,23 @@ impl Function<'input> {
         }
     }
 
-    pub fn into_owned(&self) -> Function<'static> {
-        let Function {
-            name,
-            args,
-            ret,
-            body,
-            modifiers,
-            mappings,
-        } = self;
-
-        Function {
-            name: name.into_owned(),
-            args: args.into_owned(),
-            ret: ret.clone(),
-            body: body.into_owned(),
-            modifiers: modifiers.clone(),
-            mappings: mappings.clone(),
-        }
-    }
-
-    pub fn exported(mut self) -> Function<'input> {
+    pub fn exported(mut self) -> Function {
         self.modifiers.export = true;
         self
     }
 }
 
-fn function_mappings(args: &Parameters<'input>) -> BTreeMap<String, u32> {
+fn function_mappings(args: &Parameters) -> BTreeMap<IdentifierId, u32> {
     let mut map = BTreeMap::new();
 
     for (i, (name, _)) in args.iter().enumerate() {
-        map.insert(name.node.to_string(), i as u32);
+        map.insert(name.to_ident(), i as u32);
     }
 
     map
 }
 
-impl fmt::Debug for Function<'input> {
+impl fmt::Debug for Function {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_map()
             .entry(&"name", &self.name)
@@ -200,31 +105,16 @@ impl fmt::Debug for Function<'input> {
 }
 
 #[derive(PartialEq, Clone, Debug, new)]
-pub struct Module<'input> {
-    pub funcs: Vec<Function<'input>>,
-}
-
-impl Module<'input> {
-    pub fn into_owned(&self) -> Module<'static> {
-        Module {
-            funcs: self.funcs.iter().map(|f| f.into_owned()).collect(),
-        }
-    }
+pub struct Module {
+    pub funcs: Vec<Function>,
 }
 
 #[derive(PartialEq, Clone, new)]
-pub struct Block<'input> {
-    pub expressions: Vec<Expression<'input>>,
+pub struct Block {
+    pub expressions: Vec<Expression>,
 }
 
-impl Block<'input> {
-    pub fn into_owned(&self) -> Block<'static> {
-        let expressions = self.expressions.iter().map(|e| e.into_owned()).collect();
-        Block { expressions }
-    }
-}
-
-impl fmt::Debug for Block<'input> {
+impl fmt::Debug for Block {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_list().entries(self.expressions.iter()).finish()
     }
@@ -309,21 +199,14 @@ impl fmt::Debug for ConstExpression {
 }
 
 #[derive(PartialEq, Clone)]
-pub enum Expression<'input> {
+pub enum Expression {
     Const(ConstExpression),
-    VariableAccess(Identifier<'input>),
-    Binary(
-        MathOperator,
-        Spanned<Tok<'input>>,
-        Box<BinaryExpression<'input>>,
-    ),
+    VariableAccess(Identifier),
+    Binary(MathOperator, Token, Box<BinaryExpression>),
 }
 
-impl Expression<'input> {
-    pub fn binary(
-        op: Spanned<Tok<'input>>,
-        expr: Box<BinaryExpression<'input>>,
-    ) -> Expression<'input> {
+impl Expression {
+    pub fn binary(op: Token, expr: Box<BinaryExpression>) -> Expression {
         let operator = match op.node {
             Tok::Add => MathOperator::Add,
             Tok::Sub => MathOperator::Sub,
@@ -335,23 +218,9 @@ impl Expression<'input> {
 
         Expression::Binary(operator, op, expr)
     }
-
-    pub fn into_owned(&self) -> Expression<'static> {
-        use self::Expression::*;
-
-        match self {
-            Const(expr) => Const(expr.clone()),
-            VariableAccess(id) => VariableAccess(id.into_owned()),
-            Binary(op, spanned, expr) => Binary(
-                op.clone(),
-                spanned.into_owned(),
-                Box::new(expr.into_owned()),
-            ),
-        }
-    }
 }
 
-impl fmt::Debug for Expression<'input> {
+impl fmt::Debug for Expression {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let value: &dyn fmt::Debug = match self {
             Expression::Const(constant) => constant,
@@ -366,21 +235,12 @@ impl fmt::Debug for Expression<'input> {
 }
 
 #[derive(PartialEq, Clone, new)]
-pub struct BinaryExpression<'input> {
-    pub lhs: Expression<'input>,
-    pub rhs: Expression<'input>,
+pub struct BinaryExpression {
+    pub lhs: Expression,
+    pub rhs: Expression,
 }
 
-impl BinaryExpression<'input> {
-    pub fn into_owned(&self) -> BinaryExpression<'static> {
-        BinaryExpression {
-            lhs: self.lhs.into_owned(),
-            rhs: self.rhs.into_owned(),
-        }
-    }
-}
-
-impl fmt::Debug for BinaryExpression<'input> {
+impl fmt::Debug for BinaryExpression {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?} + {:?}", self.lhs, self.rhs)
     }

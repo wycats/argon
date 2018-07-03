@@ -1,14 +1,14 @@
 #![allow(unused)]
 #![warn(unused_imports)]
 
-use super::ast_table::AstTable;
-use super::code_table::CodeTable;
-use code_database::{AbsolutePath, FileTable, FileTrait, TransactionId};
+use code_database::{AbsolutePath, TransactionId};
 use crate::annotated;
+use crate::compilation::DatabaseWithoutTyped;
+use crate::database::MapTableTrait;
 use crate::infer::UnifyTable;
 use crate::ir::{ast, resolved};
 use failure::Error;
-use std::collections::btree_map::Entry as BTreeEntry;
+use std::borrow::{Borrow, Cow};
 use std::collections::BTreeMap;
 
 crate struct Entry {
@@ -32,107 +32,87 @@ impl TypedTable {
             index: BTreeMap::new(),
         }
     }
+}
 
-    crate fn get(
-        &'a mut self,
-        file_table: &mut FileTable<impl FileTrait>,
-        code_table: &mut CodeTable,
-        ast_table: &mut AstTable,
-        key: &AbsolutePath,
+impl MapTableTrait<'parent, 'entry> for TypedTable {
+    type InnerTable = DatabaseWithoutTyped<'entry>;
+    type Key = AbsolutePath;
+    type Value = annotated::Module;
+
+    fn needs_update(&self, key: &AbsolutePath, mut db: &mut Self::InnerTable) -> bool {
+        let (mut db, ast) = db.parts();
+        ast.needs_update(key, &mut db)
+    }
+
+    fn get(
+        &mut self,
+        db: &mut Self::InnerTable,
+        key: &Self::Key,
         transaction: TransactionId,
-    ) -> Result<Option<&'a annotated::Module>, Error> {
-        self.refresh_cache(key, file_table, code_table, ast_table, transaction)?;
+    ) -> Result<Option<Cow<Self::Value>>, Error> {
+        let needs_update = self.needs_update(key, db);
+
+        if needs_update {
+            self.refresh_cache(key, db, transaction)?;
+        }
 
         let entry = self.index.get(key).unwrap();
 
-        Ok(Some(&entry.module))
+        Ok(Some(Cow::Borrowed(&entry.module)))
     }
 
     fn refresh_cache(
         &mut self,
-        key: &AbsolutePath,
-        file_table: &mut FileTable<impl FileTrait>,
-        code_table: &mut CodeTable,
-        ast_table: &mut AstTable,
+        key: &Self::Key,
+        db: &mut Self::InnerTable,
         transaction: TransactionId,
-    ) -> Result<(), Error> {
-        match self.index.entry(key.clone()) {
-            BTreeEntry::Vacant(vacant) => {
-                fill_cache(
-                    BTreeEntry::Vacant(vacant),
-                    file_table,
-                    code_table,
-                    ast_table,
-                    transaction,
-                )?;
-            }
-            BTreeEntry::Occupied(occupied) => {
-                let last_revision = {
-                    let entry = occupied.get();
-                    entry.last_revision
-                };
+    ) -> Result<Option<()>, Error> {
+        let cache_entry = compute_cache(key, db, transaction)?;
 
-                if !code_table.is_valid(file_table, key, last_revision) {
-                    fill_cache(
-                        BTreeEntry::Occupied(occupied),
-                        file_table,
-                        code_table,
-                        ast_table,
-                        transaction,
-                    )?;
-                }
-            }
-        }
+        match cache_entry {
+            Some(cache_entry) => self.index.insert(key.clone(), cache_entry),
+            None => return Ok(None),
+        };
 
-        Ok(())
+        Ok(Some(()))
     }
 }
 
-fn fill_cache(
-    entry: BTreeEntry<AbsolutePath, Entry>,
-    file_table: &mut FileTable<impl FileTrait>,
-    code_table: &mut CodeTable,
-    ast_table: &mut AstTable,
+fn compute_cache(
+    key: &AbsolutePath,
+    mut db: &mut DatabaseWithoutTyped,
     transaction: TransactionId,
-) -> Result<(), Error> {
-    let ast: &ast::Module<'static> =
-        match ast_table.get(file_table, code_table, entry.key(), transaction)? {
-            None => return Ok(()),
-            Some(file) => file,
-        };
+) -> Result<Option<Entry>, Error> {
+    let (mut db, ast) = db.parts();
 
-    let module = compile(ast)?;
+    let ast: Cow<ast::Module> = match ast.get(&mut db, key, transaction)? {
+        None => return Ok(None),
+        Some(file) => file,
+    };
+
+    let module = compile(ast.borrow())?;
 
     let new_entry = Entry {
         module,
         last_revision: 0,
     };
 
-    match entry {
-        BTreeEntry::Occupied(mut occupied) => {
-            occupied.insert(new_entry);
-        }
-        BTreeEntry::Vacant(vacant) => {
-            vacant.insert(new_entry);
-        }
-    };
-
-    Ok(())
+    Ok(Some(new_entry))
 }
 
-fn compile(ast: &ast::Module<'static>) -> Result<annotated::Module, Error> {
+fn compile(ast: &ast::Module) -> Result<annotated::Module, Error> {
     let mut table = UnifyTable::new();
 
     let module = resolved::resolve_module_names(&ast)?;
     let module = annotated::Module::from(module, &mut table);
-    // trace!(target: "wasm::compile::module", "Module: {:#?}", module);
+    trace!(target: "argon::compile::module", "Module: {:#?}", module);
     let constraints = module.constraints();
-    // trace!(target: "wasm::compile::constraints", "Constraints: {:#?}", constraints);
+    trace!(target: "argon::compile::constraints", "Constraints: {:#?}", constraints);
     let substitutions = table.unify(constraints)?;
 
-    // trace!(target: "wasm::compile::substitutions", "Substitutions: {:#?}", substitutions);
+    trace!(target: "argon::compile::substitutions", "Substitutions: {:#?}", substitutions);
     let module = substitutions.apply_module(module);
-    // trace!(target: "wasm::compile::applies", "After Substitutions: {:#?}", module);
+    trace!(target: "argon::compile::applies", "After Substitutions: {:#?}", module);
 
     Ok(module)
 }

@@ -49,9 +49,9 @@ struct UnifyOne<'unify> {
 
 impl UnifyOne<'unify> {
     fn constrain(&mut self, left: &InferType, right: &InferType) -> Result<(), CompileError> {
-        trace!(target: "wasm::unify::one", "+constraint {:?} {:?}", left, right);
+        trace!(target: "argon::unify::one", "+constraint {:?} {:?}", left, right);
 
-        println!("Constraining {:#?} + {:#?}", left, right);
+        trace!(target: "argon::unify", "Constraining {:#?} + {:#?}", left, right);
 
         match (left, right) {
             (
@@ -133,7 +133,7 @@ impl UnifyOne<'unify> {
             (left, right) => unimplemented!("unifying constraints {:?} and {:?}", left, right),
         };
 
-        trace!(target: "wasm::unify", "-constraint table={:#?}", self.table);
+        trace!(target: "argon::unify", "-constraint table={:#?}", self.table);
 
         Ok(())
     }

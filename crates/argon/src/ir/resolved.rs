@@ -1,4 +1,5 @@
 use super::annotated;
+use crate::lexer::Token;
 use crate::{ast, FunctionModifiers, MathOperator, Spanned, SpannedItem, Type, UnifyTable};
 use failure::Fail;
 use std::fmt;
@@ -10,9 +11,9 @@ pub struct Module {
 
 #[derive(Debug)]
 pub struct Function {
-    pub name: Spanned<String>,
+    pub name: Token,
     pub params: Vec<Spanned<Type>>,
-    pub symbols: Vec<Spanned<String>>,
+    pub symbols: Vec<Token>,
     pub ret: Spanned<Type>,
     pub body: Block,
     pub modifiers: FunctionModifiers,
@@ -63,18 +64,16 @@ impl Expression {
     }
 }
 
-crate fn resolve_module_names<'a, 'input: 'a>(
-    module: &'a ast::Module<'input>,
-) -> Result<Module, ResolveError> {
+crate fn resolve_module_names(module: &ast::Module) -> Result<Module, ResolveError> {
     let resolver = ResolveModule { module };
     resolver.resolve()
 }
 
-struct ResolveModule<'a, 'input: 'a> {
-    module: &'a ast::Module<'input>,
+struct ResolveModule<'a> {
+    module: &'a ast::Module,
 }
 
-impl<'a, 'input: 'a> ResolveModule<'a, 'input> {
+impl ResolveModule<'a> {
     fn resolve(&self) -> Result<Module, ResolveError> {
         let funcs: Result<Vec<Function>, ResolveError> = self
             .module
@@ -86,16 +85,13 @@ impl<'a, 'input: 'a> ResolveModule<'a, 'input> {
         Ok(Module { funcs: funcs? })
     }
 
-    fn resolve_function(
-        &self,
-        func: &'input ast::Function<'input>,
-    ) -> Result<Function, ResolveError> {
+    fn resolve_function(&self, func: &'input ast::Function) -> Result<Function, ResolveError> {
         ResolveFunction { func }.resolve()
     }
 }
 
-struct ResolveFunction<'a, 'module: 'a> {
-    func: &'a ast::Function<'module>,
+struct ResolveFunction<'a> {
+    func: &'a ast::Function,
 }
 
 #[derive(Debug, Eq, PartialEq, Clone)]
@@ -109,7 +105,7 @@ impl fmt::Display for ResolveError {
 
 impl Fail for ResolveError {}
 
-impl<'a, 'module: 'a> ResolveFunction<'a, 'module> {
+impl<'a> ResolveFunction<'a> {
     fn resolve(&self) -> Result<Function, ResolveError> {
         let ResolveFunction { func, .. } = self;
 
@@ -117,7 +113,7 @@ impl<'a, 'module: 'a> ResolveFunction<'a, 'module> {
         let mut params = vec![];
 
         for (name, ty) in func.args.iter() {
-            symbols.push(name.to_spanned_string());
+            symbols.push(name);
             params.push(ty.clone());
         }
 
@@ -130,7 +126,7 @@ impl<'a, 'module: 'a> ResolveFunction<'a, 'module> {
         }
 
         Ok(Function {
-            name: func.name.into_spanned_string(),
+            name: func.name,
             params,
             symbols,
             ret,
@@ -143,7 +139,7 @@ impl<'a, 'module: 'a> ResolveFunction<'a, 'module> {
         let expr = match expr {
             ast::Expression::Const(constant) => Expression::Const(*constant),
             ast::Expression::VariableAccess(id) => {
-                let local = self.func.mappings.get(id.node.name()).unwrap();
+                let local = self.func.mappings.get(&id.to_ident()).unwrap();
                 Expression::VariableAccess(*local)
             }
             ast::Expression::Binary(operator, tok, box ast::BinaryExpression { lhs, rhs }) => {

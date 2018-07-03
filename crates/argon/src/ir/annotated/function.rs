@@ -2,13 +2,14 @@ use super::{Annotated, Block, TypeEnv};
 use crate::infer::unify::UnifyTable;
 use crate::infer::Constraints;
 use crate::ir::{resolved, Spanned};
+use crate::lexer::Token;
 use crate::{FunctionModifiers, Type};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 crate struct Function {
-    crate name: Spanned<String>,
+    crate name: Token,
     crate params: Vec<Spanned<Type>>,
-    crate symbols: Vec<Spanned<String>>,
+    crate symbols: Vec<Token>,
     crate ret: Spanned<Type>,
     crate body: Annotated<Block>,
     crate modifiers: FunctionModifiers,

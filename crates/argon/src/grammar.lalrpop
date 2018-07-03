@@ -4,119 +4,110 @@
 use crate::ast;
 use crate::ast::*;
 use crate::ir::*;
+use crate::ir::pos::SpannedItem;
 use crate::MathOperator;
 use crate::lexer::Tok;
 use nan_preserving_float::F64;
 use std::borrow::Cow;
 
-grammar<'input>;
+grammar;
 
-Spanned<Rule>: Spanned<Rule> =
-    <l:@L> <rule:Rule> <r:@R> => rule.spanned(l, r);
+Binary<LHS, OP, RHS>: Expression =
+    <lhs:LHS> <op:OP> <rhs:RHS> => Expression::binary(op, Box::new(BinaryExpression::new(lhs, rhs)));
 
-Binary<LHS, OP, RHS>: Expression<'input> =
-    <l:@L> <lhs:LHS> <op:OP> <rhs:RHS> <r:@R> => Expression::binary(op, Box::new(BinaryExpression::new(lhs, rhs)));
-
-pub Module: Module<'input> = {
+pub Module: Module = {
     (<ModifiedFunction*>) => Module::new(<>)
 }
 
-ModifiedFunction: Function<'input> = {
+ModifiedFunction: Function = {
     "export" <Function> => <>.exported(),
     <Function>
 }
 
-Function: Function<'input> = {
-    "def" <name:Identifier> <args:Parameters> "->" <ty:Type> <body:Block> => Function::new(name, args, ty, body),
-    "def" <name:Identifier> <args:Parameters> <body:Block> => Function::new(name, args, Type::void(), body)
+Function: Function = {
+    "def" <name:"Id"> <args:Parameters> "->" <ty:Type> <body:Block> => Function::new(name, args, ty, body),
+    "def" <name:"Id"> <args:Parameters> <body:Block> => Function::new(name, args, Type::void(), body)
 }
 
-Parameters: Parameters<'input> = {
+Parameters: Parameters = {
     "(" <Parameter> <("," <Parameter>)*> ")" => Parameters::from_parser(<>),
     "(" ")" => Parameters::empty()
 }
 
-Parameter: Parameter<'input> = {
-    <Identifier> ":" <Type> => Parameter::new(<>)
+Parameter: Parameter = {
+    <"Id"> ":" <Type> => Parameter::new(<>)
 }
 
 Type: Spanned<Type> = {
-    <Spanned<RawType>> => <>
+    "i32" => Type::i32().copy_span(&<>),
+    "i64" => Type::i64().copy_span(&<>),
+    "u32" => Type::u32().copy_span(&<>),
+    "u64" => Type::u64().copy_span(&<>),
+    "f32" => Type::f32().copy_span(&<>),
+    "f64" => Type::f64().copy_span(&<>),
 }
 
-RawType: Type = {
-    "i32" => Type::i32(),
-    "i64" => Type::i64(),
-    "u32" => Type::u32(),
-    "u64" => Type::u64(),
-    "f32" => Type::f32(),
-    "f64" => Type::f64(),
-}
-
-Block: Block<'input> = {
+Block: Block = {
     "{" <(<Expression>)*> "}" => Block::new(<>)
 }
 
-Expression: Expression<'input> = {
+Expression: Expression = {
     <Expression3>
 }
 
-Expression1: Expression<'input> = {
-    <Identifier> => Expression::VariableAccess(<>),
+Expression1: Expression = {
+    <"Id"> => Expression::VariableAccess(<>),
     <I32>,
     <F64>
 }
 
-Expression2: Expression<'input> = {
+Expression2: Expression = {
     <Expression1>,
-    <Binary<Expression2, Spanned<"*">, Expression1>>,
-    <Binary<Expression2, Spanned<"/">, Expression1>>,
+    <Binary<Expression2, "*", Expression1>>,
+    <Binary<Expression2, "/", Expression1>>,
 }
 
-Expression3: Expression<'input> = {
+Expression3: Expression = {
     <Expression2>,
-    <Binary<Expression3, Spanned<"+">, Expression2>>,
-    <Binary<Expression3, Spanned<"-">, Expression2>>,
+    <Binary<Expression3, "+", Expression2>>,
+    <Binary<Expression3, "-", Expression2>>,
 }
 
-Identifier: Spanned<RawIdentifier<'input>> = <id: Spanned<RawIdentifier>> => id;
-RawIdentifier: RawIdentifier<'input> = <id: "Id"> => ident(id);
-
-I32: Expression<'input> = <Spanned<"Int">> => Expression::Const(ast::ConstExpression::Integer(<>));
-F64: Expression<'input> = <Spanned<"Float">> => Expression::Const(ast::ConstExpression::Float(<>));
+I32: Expression = <"Int"> => Expression::Const(ast::ConstExpression::Integer(<>.to_spanned_i32()));
+F64: Expression = <"Float"> => Expression::Const(ast::ConstExpression::Float(<>.to_spanned_f64()));
 
 extern {
     type Location = usize;
     type Error = crate::CompileError;
 
-    enum Tok<'input> {
-        "export" => Tok::Export,
-        "def" => Tok::Def,
+    enum Spanned<Tok> {
+        "export" => Spanned { node: Tok::Export, .. },
+        "def" => Spanned { node: Tok::Def, .. },
 
-        "->" => Tok::Arrow,
-        "(" => Tok::OpenParen,
-        ")" => Tok::CloseParen,
-        "{" => Tok::OpenBrace,
-        "}" => Tok::CloseBrace,
-        ":" => Tok::Colon,
-        "," => Tok::Comma,
+        "->" => Spanned { node: Tok::Arrow, .. },
+        "(" => Spanned { node: Tok::OpenParen, .. },
+        ")" => Spanned { node: Tok::CloseParen, .. },
+        "{" => Spanned { node: Tok::OpenBrace, .. },
+        "}" => Spanned { node: Tok::CloseBrace, .. },
+        ":" => Spanned { node: Tok::Colon, .. },
+        "," => Spanned { node: Tok::Comma, .. },
 
-        "i32" => Tok::I32,
-        "i64" => Tok::I64,
-        "u32" => Tok::U32,
-        "u64" => Tok::U64,
-        "f32" => Tok::F32,
-        "f64" => Tok::F64,
+        "i32" => Spanned { node: Tok::I32, .. },
+        "i64" => Spanned { node: Tok::I64, .. },
+        "u32" => Spanned { node: Tok::U32, .. },
+        "u64" => Spanned { node: Tok::U64, .. },
+        "f32" => Spanned { node: Tok::F32, .. },
+        "f64" => Spanned { node: Tok::F64, .. },
 
-        "*" => Tok::Mul,
-        "/" => Tok::Div,
-        "+" => Tok::Add,
-        "-" => Tok::Sub,
+        "*" => Spanned { node: Tok::Mul, .. },
+        "/" => Spanned { node: Tok::Div, .. },
+        "+" => Spanned { node: Tok::Add, .. },
+        "-" => Spanned { node: Tok::Sub, .. },
 
-        "Id" => Tok::Id(<Cow<'input, str>>),
-        "Int" => Tok::Int(<i32>),
-        "Float" => Tok::Float(<F64>),
+        "Id" => Spanned { node: Tok::Id(..), .. },
+        "Int" => Spanned { node: Tok::Int(..), .. },
+        "Float" => Spanned { node: Tok::Float(..), .. },
 
-        "WS" => Tok::WS(<Cow<'input, str>>),
+        "WS" => Spanned { node: Tok::WS, .. },
     }
 }
