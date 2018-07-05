@@ -5,13 +5,14 @@ use std::borrow::Borrow;
 use std::collections::BTreeMap;
 use std::mem::replace;
 use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::{Arc, Mutex};
 
 #[derive(Debug, Eq, PartialEq, Ord, PartialOrd, Hash, Copy, Clone)]
 pub struct EntryId(TableId, usize);
 
 #[derive(Debug)]
 pub struct InsertedEntry<E: Entry> {
-    entry: E,
+    entry: Arc<Mutex<E>>,
     last_consumed: AtomicUsize,
 }
 
@@ -31,7 +32,7 @@ impl<E: Entry> EntrySlot<E> {
         }
     }
 
-    fn as_entry(&self, transaction: TransactionId) -> &E {
+    fn as_entry(&self, transaction: TransactionId) -> Arc<Mutex<E>> {
         match self {
             EntrySlot::Pointer(..) => panic!("Unexpected pointer"),
             EntrySlot::Placeholder => panic!("Unexpected placeholder"),
@@ -41,12 +42,12 @@ impl<E: Entry> EntrySlot<E> {
                 last_consumed,
             }) => {
                 last_consumed.store(transaction.0, Ordering::SeqCst);
-                entry
+                entry.clone()
             }
         }
     }
 
-    fn as_entry_mut(&mut self, transaction: TransactionId) -> &mut E {
+    fn as_entry_mut(&mut self, transaction: TransactionId) -> Arc<Mutex<E>> {
         match self {
             EntrySlot::Pointer(..) => panic!("Unexpected pointer"),
             EntrySlot::Placeholder => panic!("Unexpected placeholder"),
@@ -56,17 +57,17 @@ impl<E: Entry> EntrySlot<E> {
                 last_consumed,
             }) => {
                 last_consumed.store(transaction.0, Ordering::SeqCst);
-                entry
+                entry.clone()
             }
         }
     }
 
-    fn peek(&self) -> &E {
+    fn peek(&self) -> Arc<Mutex<E>> {
         match self {
             EntrySlot::Pointer(..) => panic!("Unexpected pointer"),
             EntrySlot::Placeholder => panic!("Unexpected placeholder"),
 
-            EntrySlot::Entry(InsertedEntry { entry: e, .. }) => e,
+            EntrySlot::Entry(InsertedEntry { entry: e, .. }) => e.clone(),
         }
     }
 }
@@ -83,38 +84,15 @@ pub struct LeafTable<E: Entry> {
 }
 
 impl<E: Entry> LeafTable<E> {
-    pub fn get_entry_value(
-        &self,
-        key: impl Borrow<E::Key>,
-        id: TransactionId,
-    ) -> Option<&E::Value> {
-        let entry = self.get_entry(key, id)?;
-        Some(entry.value(id))
-    }
-
-    pub fn get_entry_value_mut(
-        &mut self,
-        key: impl Borrow<E::Key>,
-        id: TransactionId,
-    ) -> Option<&mut E::Value> {
-        let entry = self.get_entry_mut(key, id)?;
-        Some(entry.value_mut(id))
-    }
-
-    pub fn deref_entry_value(&self, key: impl Borrow<E::Key>, id: TransactionId) -> Option<E::Value>
-    where
-        E::Value: Copy,
-    {
-        self.get_entry_value(key.borrow(), id).map(|v| *v)
-    }
-
     pub fn get_entry_tag(&self, key: impl Borrow<E::Key>) -> Option<E::Tag> {
         let entry = self.peek_entry_by_key(key.borrow())?;
+        let entry = entry.lock().unwrap();
         Some(entry.tag())
     }
 
     pub fn get_entry_revision(&self, key: impl Borrow<E::Key>) -> Option<usize> {
         let entry = self.peek_entry_by_key(key.borrow())?;
+        let entry = entry.lock().unwrap();
         Some(crate::tag::Tag::revision(&entry.tag()))
     }
 
@@ -122,7 +100,7 @@ impl<E: Entry> LeafTable<E> {
     // expensive to store
     pub fn can_reuse_entry(&self, key: &E::Key, snapshot: usize, last_value: &E::Value) -> bool {
         match self.peek_entry_by_key(key) {
-            Some(entry) => entry.peek(snapshot, last_value),
+            Some(entry) => entry.lock().unwrap().peek(snapshot, last_value),
             None => false,
         }
     }
@@ -147,7 +125,7 @@ impl<E: Entry> LeafTable<E> {
 
         let key = entry.key().clone();
         self.rows[next_entry] = EntrySlot::Entry(InsertedEntry {
-            entry,
+            entry: Arc::new(Mutex::new(entry)),
             last_consumed: AtomicUsize::new(transaction_id.0),
         });
 
@@ -157,7 +135,7 @@ impl<E: Entry> LeafTable<E> {
         self.entry_id(next_entry)
     }
 
-    pub fn peek_entry(&self, id: EntryId) -> &E {
+    pub fn peek_entry(&self, id: EntryId) -> Arc<Mutex<E>> {
         debug_assert!(
             id.0 == self.table_id,
             "Wrong TableId (passed {:?}, this table was {:?})",
@@ -165,17 +143,19 @@ impl<E: Entry> LeafTable<E> {
             self.table_id
         );
 
-        &self.rows[id.1].peek()
+        self.rows[id.1].peek().clone()
     }
 
     pub fn deref_entry(&self, id: EntryId, transaction: TransactionId) -> E
     where
         E: Copy,
     {
-        *self.borrow_entry(id, transaction)
+        let entry = self.borrow_entry(id, transaction);
+        let value = entry.lock().unwrap();
+        *value
     }
 
-    pub fn borrow_entry(&self, id: EntryId, transaction: TransactionId) -> &E {
+    pub fn borrow_entry(&self, id: EntryId, transaction: TransactionId) -> Arc<Mutex<E>> {
         debug_assert!(
             id.0 == self.table_id,
             "Wrong TableId (passed {:?}, this table was {:?})",
@@ -183,7 +163,7 @@ impl<E: Entry> LeafTable<E> {
             self.table_id
         );
 
-        &self.rows[id.1].as_entry(transaction)
+        self.rows[id.1].as_entry(transaction).clone()
     }
 
     // dropping should only be done by a sweep at the end of a transaction, which
@@ -192,48 +172,27 @@ impl<E: Entry> LeafTable<E> {
         let next_entry = self.entry_id(self.next_entry);
         let old_entry = replace(&mut self.rows[id.1], EntrySlot::Pointer(next_entry));
         let old_entry = old_entry.peek();
-        self.index.remove(old_entry.key());
+        self.index.remove(old_entry.lock().unwrap().key());
 
         self.next_entry = id.1;
     }
 
-    pub fn get_entry(&self, key: impl Borrow<E::Key>, transaction: TransactionId) -> Option<&E> {
-        let id = self.index.get(key.borrow())?;
-
-        Some(&self.rows[id.1].as_entry(transaction))
-    }
-
-    pub fn get_entry_mut(
-        &mut self,
+    pub fn get_entry(
+        &self,
         key: impl Borrow<E::Key>,
         transaction: TransactionId,
-    ) -> Option<&mut E> {
+    ) -> Option<Arc<Mutex<E>>> {
         let id = self.index.get(key.borrow())?;
 
-        Some(self.rows[id.1].as_entry_mut(transaction))
+        Some(self.rows[id.1].as_entry(transaction).clone())
     }
-
-    pub fn peek_entry_by_key(&self, key: &E::Key) -> Option<&E> {
+    pub fn peek_entry_by_key(&self, key: &E::Key) -> Option<Arc<Mutex<E>>> {
         let id = self.index.get(key.borrow())?;
 
-        Some(&self.rows[id.1].peek())
+        Some(self.rows[id.1].peek())
     }
 
     fn entry_id(&self, id: usize) -> EntryId {
         EntryId(self.table_id, id)
-    }
-}
-
-impl<E: Entry> Table for LeafTable<E> {
-    type Key = E::Key;
-    type Value = E::Value;
-    type Tag = E::Tag;
-
-    fn get_table_value_by_key(&self, key: &Self::Key, id: TransactionId) -> Option<&Self::Value> {
-        self.get_entry_value(key, id)
-    }
-
-    fn get_table_tag_by_key(&self, key: &Self::Key) -> Option<Self::Tag> {
-        self.get_entry_tag(key)
     }
 }

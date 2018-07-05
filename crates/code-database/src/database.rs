@@ -3,6 +3,7 @@ use crate::file_system::file_entry::FileEntry;
 use crate::file_system::real_file::RealFile;
 use crate::file_system::watch::Watch;
 use crate::LeafTable;
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 #[derive(Debug, Eq, PartialEq, Ord, PartialOrd, Hash, Copy, Clone)]
 pub struct TransactionId(crate usize);
@@ -11,7 +12,7 @@ pub struct TransactionId(crate usize);
 pub struct TableId(usize);
 
 pub struct Database {
-    transaction_count: usize,
+    transaction_count: AtomicUsize,
     table_count: usize,
     watch: Watch,
     file_table: LeafTable<FileEntry<RealFile>>,
@@ -20,17 +21,16 @@ pub struct Database {
 impl Database {
     pub fn new() -> Database {
         Database {
-            transaction_count: 0,
+            transaction_count: AtomicUsize::new(0),
             table_count: 1,
             watch: Watch::new(),
             file_table: LeafTable::new(TableId(0)),
         }
     }
 
-    pub fn begin(&mut self) -> TransactionId {
-        let transaction_count = self.transaction_count;
-        self.transaction_count += 1;
-        TransactionId(transaction_count)
+    pub fn begin(&self) -> TransactionId {
+        let txn = self.transaction_count.fetch_add(1, Ordering::SeqCst);
+        TransactionId(txn)
     }
 
     pub fn commit(&mut self) {

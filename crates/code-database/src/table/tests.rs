@@ -93,35 +93,21 @@ impl Expect<'ctx> {
         entry: EntryId,
     ) -> Result<(), NoneError> {
         println!("{:?} {:?} {:?}", key, value, entry);
-        assert_eq!(
-            self.table
-                .deref_entry_value(key, self.transaction)
-                .expect(&format!("missing key={:?}", key)),
-            value,
-            "deref {:?} = {:?}",
-            key,
-            value
-        );
 
-        assert_eq!(
-            self.table
-                .get_entry_value(key, self.transaction)
-                .expect(&format!("missing key={:?}", key)),
-            &value,
-            "get value {:?} = {:?}",
-            key,
-            value
-        );
+        let actual = self.table.get_entry(key, self.transaction);
+        let actual = actual.unwrap();
+        let actual = actual.lock().unwrap();
 
-        assert_eq!(
-            self.table
-                .get_entry(key, self.transaction)
-                .expect(&format!("missing key={:?}", key)),
-            &value,
-            "get entry {:?} = {:?}",
-            key,
-            value
-        );
+        assert_eq!(*actual, value, "deref {:?} = {:?}", key, value);
+
+        let table_entry = self
+            .table
+            .get_entry(key, self.transaction)
+            .expect(&format!("missing key={:?}", key));
+
+        let actual = table_entry.lock().unwrap();
+
+        assert_eq!(*actual, value, "get entry {:?} = {:?}", key, value);
         assert_eq!(
             self.table.deref_entry(entry, self.transaction),
             value,
@@ -129,13 +115,11 @@ impl Expect<'ctx> {
             entry,
             value
         );
-        assert_eq!(
-            self.table.borrow_entry(entry, self.transaction),
-            &value,
-            "borrow entry {:?} = {:?}",
-            entry,
-            value
-        );
+
+        let table_entry = self.table.borrow_entry(entry, self.transaction);
+        let actual = table_entry.lock().unwrap();
+
+        assert_eq!(*actual, value, "borrow entry {:?} = {:?}", entry, value);
 
         Ok(())
     }
@@ -162,7 +146,7 @@ fn test_storage() -> Result<(), NoneError> {
 
     table.drop_entry(e2);
 
-    assert_eq!(table.get_entry("2", transaction), None);
+    assert!(table.get_entry("2", transaction).is_none());
 
     let e2 = table.add_entry("2b", transaction);
 

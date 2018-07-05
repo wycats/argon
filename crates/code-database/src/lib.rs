@@ -19,3 +19,8 @@ pub use self::file_system::File as FileTrait;
 pub use self::table::LeafTable;
 
 pub type FileTable<F> = LeafTable<crate::file_system::file_entry::FileEntry<F>>;
+
+pub mod prelude {
+    pub use super::entry::Entry;
+    pub use super::file_system::File as FileTrait;
+}

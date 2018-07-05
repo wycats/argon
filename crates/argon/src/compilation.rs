@@ -1,120 +1,133 @@
-use self::codemap_table::CodemapTable;
-use code_database::{AbsolutePath, Database as CodeDatabase, RealFile};
+use crate::database::Arcish;
 use crate::database::*;
+use crate::prelude::*;
 use failure::Error;
 use parity_wasm::elements;
-use std::borrow::Borrow;
-use std::borrow::Cow;
-use std::path::Path;
+use std::fs::File;
+use std::sync::Arc;
 
 pub struct Database {
-    crate files: CodeDatabase,
-    crate code: CodeTable,
+    leaves: Leaves,
+    tables: Arc<Tables>,
+}
+
+impl Database {
+    pub fn new() -> Database {
+        Database {
+            leaves: Leaves::new(),
+            tables: Arc::new(Tables::new()),
+        }
+    }
+
+    pub fn shared(&'db self) -> SharedDatabase<'db> {
+        SharedDatabase {
+            leaves: &self.leaves,
+            tables: self.tables.clone(),
+        }
+    }
+
+    pub fn add_file(&mut self, name: AbsolutePath) -> Result<(), Error> {
+        let mut src = String::new();
+        let mut file = File::open(name.as_ref())?;
+        file.read_to_string(&mut src)?;
+
+        let filename = codespan::FileName::real(name.as_ref());
+        let filemap = self.leaves.files.add_filemap(filename, src);
+        self.leaves
+            .code
+            .insert_shared(name, VersionedCell::from(Arcish::weak(&filemap)));
+
+        Ok(())
+    }
+}
+
+pub struct Leaves {
+    crate files: codespan::CodeMap,
+    crate code: Table<AbsolutePath, codespan::FileMap>,
+}
+
+impl Leaves {
+    crate fn new() -> Leaves {
+        Leaves {
+            files: codespan::CodeMap::new(),
+            code: Table::new(),
+        }
+    }
+}
+
+pub struct Tables {
     crate ast: AstTable,
     crate typed: TypedTable,
     crate wasm: WasmTable,
 }
 
-impl Database {
-    crate fn without_wasm(&mut self) -> (&mut WasmTable, DatabaseWithoutWasm) {
-        let db = DatabaseWithoutWasm {
-            files: &mut self.files,
-            code: &mut self.code,
-            ast: &mut self.ast,
-            typed: &mut self.typed,
-        };
-
-        (&mut self.wasm, db)
-    }
-}
-
-pub struct DatabaseWithoutWasm<'parent> {
-    crate files: &'parent mut CodeDatabase,
-    crate code: &'parent mut CodeTable,
-    crate ast: &'parent mut AstTable,
-    crate typed: &'parent mut TypedTable,
-}
-
-impl DatabaseWithoutWasm<'parent> {
-    crate fn without_typed(&mut self) -> (&mut TypedTable, DatabaseWithoutTyped<'_>) {
-        let db = DatabaseWithoutTyped {
-            files: self.files,
-            code: self.code,
-            ast: self.ast,
-        };
-
-        (self.typed, db)
-    }
-}
-
-pub struct DatabaseWithoutTyped<'parent> {
-    crate files: &'parent mut CodeDatabase,
-    crate code: &'parent mut CodeTable,
-    crate ast: &'parent mut AstTable,
-}
-
-impl DatabaseWithoutTyped<'parent> {
-    crate fn parts(&mut self) -> (CodemapTable, &mut AstTable) {
-        let code = CodemapTable {
-            files: self.files,
-            code: self.code,
-        };
-
-        (code, self.ast)
-    }
-
-    crate fn code(&mut self) -> CodemapTable {
-        CodemapTable {
-            files: self.files,
-            code: self.code,
-        }
-    }
-}
-
-pub struct Compilation {
-    database: Database,
-}
-
-impl Compilation {
-    fn db(&mut self) -> &mut Database {
-        &mut self.database
-    }
-
-    pub fn new() -> Compilation {
-        Compilation {
-            database: Database {
-                files: CodeDatabase::new(),
-                code: CodeTable::new(),
-                ast: AstTable::new(),
-                typed: TypedTable::new(),
-                wasm: WasmTable::new(),
-            },
+impl Tables {
+    fn new() -> Tables {
+        Tables {
+            ast: AstTable::new(),
+            typed: TypedTable::new(),
+            wasm: WasmTable::new(),
         }
     }
 
-    pub fn add(&mut self, path: impl AsRef<Path>) -> Result<AbsolutePath, Error> {
-        let db = &mut self.database.files;
-        let txn = db.begin();
-        let path = AbsolutePath::expand(path)?;
-        let file = RealFile::unwatched(path.clone());
-        db.files_mut().add_entry(file.into_entry(), txn);
-        db.commit();
-
-        Ok(path)
+    pub fn ast(&self) -> &AstTable {
+        &self.ast
     }
 
-    pub fn get(&mut self, path: &AbsolutePath) -> Result<Option<Cow<elements::Module>>, Error>
+    pub fn typed(&self) -> &TypedTable {
+        &self.typed
+    }
+
+    pub fn wasm(&self) -> &WasmTable {
+        &self.wasm
+    }
+}
+
+pub struct SharedDatabase<'a> {
+    leaves: &'a Leaves,
+    tables: Arc<Tables>,
+}
+
+impl SharedDatabase<'a> {
+    crate fn clone(&self) -> SharedDatabase<'a> {
+        SharedDatabase {
+            leaves: self.leaves,
+            tables: self.tables.clone(),
+        }
+    }
+
+    crate fn leaves(&self) -> &'a Leaves {
+        self.leaves
+    }
+
+    crate fn tables(&self) -> Arc<Tables> {
+        self.tables.clone()
+    }
+
+    crate fn get_file(&self, name: &AbsolutePath) -> Option<VersionedCell<codespan::FileMap>> {
+        self.leaves.code.get(name)
+    }
+}
+
+pub struct Compilation<'db> {
+    database: SharedDatabase<'db>,
+}
+
+impl Compilation<'db> {
+    pub fn new(database: SharedDatabase<'db>) -> Compilation {
+        Compilation { database }
+    }
+
+    pub fn get(
+        &mut self,
+        path: &AbsolutePath,
+    ) -> GetReifyResult<VersionedCell<elements::Module>, Error>
     where
         Error: 'static,
     {
-        let txn = {
-            let db = &mut self.database.files;
-            trace!(target: "argon::compilation", "files: {:#?}", db.files_mut());
-            db.begin()
-        };
-
-        let db = self.db();
-        let (wasm, mut rest) = db.without_wasm();
-        wasm.get(&mut rest, path, txn)
+        self.database
+            .tables()
+            .wasm()
+            .get_reify(self.database.clone(), path)
     }
 }
