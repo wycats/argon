@@ -130,8 +130,8 @@ fn compile(
     file: VersionedCell<FileMap>,
 ) -> Result<elements::Module, Error> {
     let mut builder = builder::module();
-    let module = module.as_strong();
-    let file = file.as_strong();
+    let module = module.value();
+    let file = file.value();
 
     for func in &module.funcs {
         let function = builder::function();

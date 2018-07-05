@@ -49,10 +49,6 @@ impl<T> VersionedCell<T> {
         }
     }
 
-    pub fn get(&self) -> Arcish<T> {
-        self.value.as_weak_arcish()
-    }
-
     pub fn update(&self, value: T) -> VersionedCell<T> {
         VersionedCell {
             revision: bump(),
@@ -100,7 +96,7 @@ impl<T> Arcish<T> {
         Arcish::Weak(weak)
     }
 
-    pub fn as_strong(&self) -> Arc<T> {
+    pub fn value(&self) -> Arc<T> {
         match self {
             Arcish::Strong(s) => s.clone(),
             Arcish::Weak(s) => s.clone().upgrade().unwrap(),

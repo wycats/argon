@@ -29,7 +29,7 @@ impl AstTable {
     ) -> GetResult<VersionedCell<ast::Module>, Error> {
         let file = db.get_file(key)?;
 
-        let parsed = parse(file.as_strong().src())?;
+        let parsed = parse(file.value().src())?;
         let parsed = VersionedCell::new(parsed);
         let parsed = self.index.insert_shared(key.clone(), parsed);
         GetResult::value(parsed)
@@ -39,12 +39,12 @@ impl AstTable {
         &self,
         db: SharedDatabase,
         key: &AbsolutePath,
-    ) -> GetResult<Weak<ast::Module>, Error> {
+    ) -> GetResult<VersionedCell<ast::Module>, Error> {
         match self.get(db, key)? {
-            ValueResult::NewValue(file) => GetResult::value(file.as_weak()),
+            ValueResult::NewValue(file) => GetResult::value(file),
             ValueResult::ValidCache => {
                 let value = self.index.get(key)?;
-                GetResult::value(value.as_weak())
+                GetResult::value(value)
             }
         }
     }

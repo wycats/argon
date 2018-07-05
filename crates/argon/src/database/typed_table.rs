@@ -57,8 +57,7 @@ impl TypedTable {
 fn compile(ast: VersionedCell<ast::Module>) -> Result<annotated::Module, Error> {
     let mut table = UnifyTable::new();
 
-    let ast = ast.as_strong();
-    let module = resolved::resolve_module_names(&ast)?;
+    let module = resolved::resolve_module_names(&ast.value())?;
     let module = annotated::Module::from(module, &mut table);
     trace!(target: "argon::compile::module", "Module: {:#?}", module);
     let constraints = module.constraints();
