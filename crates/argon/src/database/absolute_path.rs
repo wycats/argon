@@ -1,7 +1,4 @@
-use failure::{Error, ResultExt};
-use std::borrow::Borrow;
-use std::fs;
-use std::path::{Path, PathBuf};
+use crate::prelude::*;
 
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct AbsolutePath(PathBuf);

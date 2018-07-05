@@ -2,7 +2,6 @@
 crate mod table;
 crate mod absolute_path;
 crate mod ast_table;
-crate mod parse;
 crate mod typed_table;
 crate mod versioned_cell;
 crate mod wasm_table;

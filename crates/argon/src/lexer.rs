@@ -1,10 +1,9 @@
 mod tokenize;
 
+use crate::prelude::*;
+
 pub use self::tokenize::Lexer;
 use crate::ir::pos::{Spanned, SpannedItem};
-
-use nan_preserving_float::F64;
-use std::fmt;
 
 #[derive(Debug)]
 pub struct LexicalError {}

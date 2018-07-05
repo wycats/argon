@@ -1,5 +1,6 @@
+use crate::prelude::*;
+
 use super::{MathOperator, MathType};
-use std::fmt;
 
 impl fmt::Debug for MathType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {

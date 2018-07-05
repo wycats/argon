@@ -1,12 +1,9 @@
+use crate::prelude::*;
+
 use crate::compile::math::{MathOperator, MathType};
 use crate::ir::pos::{Spanned, SpannedItem};
 use crate::ir::resolved::ResolveError;
 use crate::InferType;
-use failure::Fail;
-use itertools::Itertools;
-use nan_preserving_float::{F32, F64};
-use std::convert::From;
-use std::fmt;
 
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub enum CompileError {

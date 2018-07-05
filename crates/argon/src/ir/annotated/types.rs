@@ -1,7 +1,7 @@
+use crate::prelude::*;
+
 use crate::ir::{Spanned, SpannedItem};
 use crate::{MathType, Type};
-use itertools::Itertools;
-use std::fmt;
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
 pub struct TypeVar {

@@ -1,10 +1,6 @@
-use crate::database::VersionedCell;
 use crate::prelude::*;
-use failure::Error;
-use std::collections::BTreeMap;
-use std::option::NoneError;
-use std::sync::Arc;
-use std::sync::Mutex;
+
+use crate::database::VersionedCell;
 
 crate enum GetResult<T, E> {
     ValueResult(ValueResult<T>),

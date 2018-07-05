@@ -1,8 +1,9 @@
+use crate::prelude::*;
+
 use super::annotated;
 use crate::lexer::Token;
 use crate::{ast, FunctionModifiers, MathOperator, Spanned, SpannedItem, Type, UnifyTable};
 use failure::Fail;
-use std::fmt;
 
 #[derive(Debug)]
 pub struct Module {

@@ -1,13 +1,12 @@
 #![allow(unused)]
 #![warn(unused_imports)]
 
-use codespan::FileMap;
+use crate::prelude::*;
+
 use crate::annotated;
 use crate::compilation::SharedDatabase;
 use crate::compile::function::compile_function;
-use crate::database::VersionedCell;
-use crate::database::{AbsolutePath, GetReifyResult, GetResult, Table, ValueResult};
-use failure::Error;
+use crate::database::{AbsolutePath, GetReifyResult, GetResult, Table, ValueResult, VersionedCell};
 use parity_wasm::{builder, elements};
 
 pub struct WasmTable {

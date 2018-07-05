@@ -1,4 +1,4 @@
-use std::fmt::{self, Debug};
+use crate::prelude::*;
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct Id(u32);

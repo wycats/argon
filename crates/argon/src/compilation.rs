@@ -1,10 +1,8 @@
+use crate::prelude::*;
+
 use crate::database::Arcish;
 use crate::database::*;
-use crate::prelude::*;
-use failure::Error;
 use parity_wasm::elements;
-use std::fs::File;
-use std::sync::Arc;
 
 pub struct Database {
     leaves: Leaves,
@@ -94,10 +92,6 @@ impl SharedDatabase<'a> {
             leaves: self.leaves,
             tables: self.tables.clone(),
         }
-    }
-
-    crate fn leaves(&self) -> &'a Leaves {
-        self.leaves
     }
 
     crate fn tables(&self) -> Arc<Tables> {

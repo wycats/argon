@@ -1,3 +1,5 @@
+use crate::prelude::*;
+
 use super::expression::compile_expression;
 use crate::annotated;
 use parity_wasm::elements;

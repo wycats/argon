@@ -1,13 +1,12 @@
 #![allow(unused)]
 #![warn(unused_imports)]
 
+use crate::prelude::*;
+
 use crate::compilation::SharedDatabase;
-use crate::database::VersionedCell;
-use crate::database::{AbsolutePath, GetResult, Table, ValueResult};
+use crate::database::{AbsolutePath, GetResult, Table, ValueResult, VersionedCell};
 use crate::ir::ast;
 use crate::parser::parse;
-use failure::Error;
-use std::sync::Weak;
 
 pub struct AstTable {
     index: Table<AbsolutePath, ast::Module>,

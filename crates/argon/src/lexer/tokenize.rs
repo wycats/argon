@@ -1,8 +1,9 @@
+use crate::prelude::*;
+
 use super::Tok;
 use crate::ir::pos::SpannedItem;
 use crate::lexer::Token;
 use crate::CompileError;
-use nan_preserving_float::F64;
 use unicode_xid::UnicodeXID;
 
 lazy_static! {

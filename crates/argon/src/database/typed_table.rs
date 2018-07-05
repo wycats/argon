@@ -1,13 +1,12 @@
 #![allow(unused)]
 #![warn(unused_imports)]
 
+use crate::prelude::*;
+
 use crate::compilation::SharedDatabase;
-use crate::database::VersionedCell;
-use crate::database::{AbsolutePath, GetResult, Table, ValueResult};
+use crate::database::{AbsolutePath, GetResult, Table, ValueResult, VersionedCell};
 use crate::infer::UnifyTable;
 use crate::ir::{annotated, ast, resolved};
-use crate::prelude::*;
-use failure::Error;
 
 pub struct TypedTable {
     index: Table<AbsolutePath, annotated::Module>,
