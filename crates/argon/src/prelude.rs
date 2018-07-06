@@ -1,9 +1,11 @@
 #![allow(unused)]
 
 crate use codespan::FileMap;
-crate use crate::error::IntoError;
+crate use crate::errors::compile_error::{CompileError, ToDiagnostic};
+crate use crate::errors::error::IntoError;
+crate use crate::errors::ArgonError;
+crate use failure::Fail;
 crate use failure::ResultExt;
-crate use failure::{Error, Fail};
 crate use itertools::Itertools;
 crate use nan_preserving_float::{F32, F64};
 crate use std::borrow::Borrow;

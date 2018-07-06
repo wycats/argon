@@ -19,11 +19,12 @@ impl<E: std::error::Error + Send + Sync + 'static> Debug for StdError<E> {
 impl<E: std::error::Error + Send + Sync + 'static> Fail for StdError<E> {}
 
 crate trait IntoError {
-    fn into_error(self) -> Error;
+    fn into_error(self) -> ArgonError;
 }
 
 impl<E: std::error::Error + Send + Sync + 'static> IntoError for E {
-    fn into_error(self) -> Error {
-        Error::from(StdError { inner: self })
+    fn into_error(self) -> ArgonError {
+        let error = failure::Error::from(StdError { inner: self });
+        ArgonError::Error(error)
     }
 }

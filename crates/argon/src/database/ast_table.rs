@@ -34,5 +34,6 @@ impl AstTable {
 }
 
 fn compute(file: &VersionedCell<FileMap>) -> GetResult<ast::Module> {
-    GetResult::value(parse(file.value().src())?)
+    let start = file.value().span().start().to_usize();
+    GetResult::value(parse(file.value().src(), start)?)
 }

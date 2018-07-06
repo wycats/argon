@@ -1,5 +1,6 @@
 use crate::prelude::*;
 
+use codespan::ByteSpan;
 use crate::ir::{Spanned, SpannedItem};
 use crate::{MathType, Type};
 
@@ -60,13 +61,22 @@ impl ConstrainedType {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
+#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
 pub enum InferType {
     Resolved(Spanned<Type>),
     Constrained(ConstrainedType),
     Function(Vec<Spanned<Type>>, Spanned<Type>),
     VariableFunction(Vec<InferType>, Box<InferType>),
     Variable(TypeVar),
+}
+
+impl InferType {
+    pub fn span(&self) -> ByteSpan {
+        match self {
+            InferType::Resolved(ty) => ty.span,
+            other => unimplemented!("turning {:?} into ByteSpan", other),
+        }
+    }
 }
 
 impl fmt::Display for InferType {

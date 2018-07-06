@@ -1,8 +1,8 @@
-use crate::ir::CompileError;
 use crate::prelude::*;
 
 use super::annotated;
 use crate::lexer::Token;
+use crate::CompileError;
 use crate::{ast, FunctionModifiers, MathOperator, Spanned, SpannedItem, Type, UnifyTable};
 use failure::Fail;
 

@@ -24,7 +24,11 @@ impl Database {
         }
     }
 
-    pub fn add_file(&mut self, name: AbsolutePath) -> Result<(), Error> {
+    pub fn codemap(&self) -> &codespan::CodeMap {
+        &self.leaves.files
+    }
+
+    pub fn add_file(&mut self, name: AbsolutePath) -> Result<(), ArgonError> {
         let mut src = String::new();
         let mut file = File::open(name.as_ref())?;
         file.read_to_string(&mut src)?;
@@ -112,9 +116,12 @@ impl Compilation<'db> {
         Compilation { database }
     }
 
-    pub fn get(&mut self, path: &AbsolutePath) -> GetResult<VersionedCell<elements::Module>, Error>
+    pub fn get(
+        &mut self,
+        path: &AbsolutePath,
+    ) -> GetResult<VersionedCell<elements::Module>, ArgonError>
     where
-        Error: 'static,
+        ArgonError: 'static,
     {
         self.database
             .tables()

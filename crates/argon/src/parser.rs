@@ -9,9 +9,9 @@ pub enum ErrorLocation {
     Byte(usize),
 }
 
-pub fn parse(source: &'input str) -> Result<ast::Module, CompileError> {
+pub fn parse(source: &'input str, codespan_start: usize) -> Result<ast::Module, CompileError> {
     ModuleParser::new()
-        .parse(Lexer::new(source.as_ref()))
+        .parse(Lexer::new(source.as_ref(), codespan_start))
         .map_err(|e| CompileError::ParseError(e))
 }
 

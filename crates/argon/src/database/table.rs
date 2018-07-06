@@ -1,10 +1,10 @@
-use crate::ir::CompileError;
 use crate::prelude::*;
+use crate::CompileError;
 
 use crate::database::VersionedCell;
 
 #[must_use]
-pub enum GetResult<T, E = Error> {
+pub enum GetResult<T, E = ArgonError> {
     Value(T),
     SkipResult(SkipResult<E>),
 }
@@ -134,9 +134,9 @@ macro_rules! validate {
     }};
 }
 
-impl<T> std::ops::Try for GetResult<T, Error> {
+impl<T> std::ops::Try for GetResult<T, ArgonError> {
     type Ok = T;
-    type Error = SkipResult<Error>;
+    type Error = SkipResult<ArgonError>;
 
     fn into_result(self) -> Result<Self::Ok, Self::Error> {
         use self::GetResult::*;
@@ -147,40 +147,40 @@ impl<T> std::ops::Try for GetResult<T, Error> {
         }
     }
 
-    fn from_error(err: SkipResult<Error>) -> GetResult<T, Error> {
+    fn from_error(err: SkipResult<ArgonError>) -> GetResult<T, ArgonError> {
         GetResult::SkipResult(err)
     }
 
-    fn from_ok(value: T) -> GetResult<T, Error> {
+    fn from_ok(value: T) -> GetResult<T, ArgonError> {
         GetResult::value(value)
     }
 }
-impl From<CompileError> for SkipResult<Error> {
-    fn from(error: CompileError) -> SkipResult<Error> {
-        SkipResult::Error(Error::from(error))
+impl From<CompileError> for SkipResult<ArgonError> {
+    fn from(error: CompileError) -> SkipResult<ArgonError> {
+        SkipResult::Error(ArgonError::from(error))
     }
 }
 
-impl From<NoneError> for SkipResult<Error> {
-    fn from(_: NoneError) -> SkipResult<Error> {
+impl From<NoneError> for SkipResult<ArgonError> {
+    fn from(_: NoneError) -> SkipResult<ArgonError> {
         SkipResult::None
     }
 }
 
-impl From<std::io::Error> for SkipResult<Error> {
-    fn from(err: std::io::Error) -> SkipResult<Error> {
+impl From<std::io::Error> for SkipResult<ArgonError> {
+    fn from(err: std::io::Error) -> SkipResult<ArgonError> {
         SkipResult::Error(err.into_error())
     }
 }
 
-impl From<codespan::SpanError> for SkipResult<Error> {
-    fn from(err: codespan::SpanError) -> SkipResult<Error> {
-        SkipResult::Error(Error::from(err))
+impl From<codespan::SpanError> for SkipResult<ArgonError> {
+    fn from(err: codespan::SpanError) -> SkipResult<ArgonError> {
+        SkipResult::Error(ArgonError::from(err))
     }
 }
 
-impl<T> From<Option<T>> for GetResult<T, Error> {
-    fn from(value: Option<T>) -> GetResult<T, Error> {
+impl<T> From<Option<T>> for GetResult<T, ArgonError> {
+    fn from(value: Option<T>) -> GetResult<T, ArgonError> {
         match value {
             None => GetResult::SkipResult(SkipResult::None),
             Some(value) => GetResult::value(value),

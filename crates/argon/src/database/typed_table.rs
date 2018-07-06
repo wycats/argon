@@ -23,7 +23,7 @@ impl TypedTable {
         &self,
         db: SharedDatabase,
         key: &AbsolutePath,
-    ) -> GetResult<VersionedCell<annotated::Module>, Error> {
+    ) -> GetResult<VersionedCell<annotated::Module>, ArgonError> {
         let ast = db.tables().ast().get(db.clone(), key)?;
         let index = &self.index;
 

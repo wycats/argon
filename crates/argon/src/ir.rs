@@ -6,6 +6,4 @@ crate mod shared;
 
 crate use self::annotated::{InferType, TypeVar};
 pub use self::pos::*;
-pub use self::shared::{
-    CompileError, ConstExpression, FunctionModifiers, FunctionType, Type, TypeError,
-};
+pub use self::shared::{ConstExpression, FunctionModifiers, FunctionType, Type};

@@ -32,6 +32,7 @@ lazy_static! {
 }
 
 pub struct Lexer<'input> {
+    codespan_start: usize,
     input: &'input str,
     rest: &'input str,
     token_start: &'input str,
@@ -42,8 +43,9 @@ pub struct Lexer<'input> {
 }
 
 impl Lexer<'input> {
-    crate fn new(input: &'input str) -> Lexer<'input> {
+    crate fn new(input: &'input str, codespan_start: usize) -> Lexer<'input> {
         Lexer {
+            codespan_start,
             input,
             rest: input,
             token_start: input,
@@ -140,12 +142,17 @@ impl Iterator for Lexer<'input> {
 
                     self.trace("-");
                     trace!(target: "argon::tokenize", "-> token={:?}", token);
-                    return Some(Ok((start, token.spanned(start, end), end)));
+                    return Some(Ok((
+                        start,
+                        token.spanned(self.codespan_start, start, end),
+                        end,
+                    )));
                 }
 
                 LexerNext::EmitCurrent(size, tok, next_state) => {
+                    let file_start = self.codespan_start;
                     let (start, token, end) = self.finalize_current(size, next_state);
-                    return Some(Ok((start, tok(token).spanned(start, end), end)));
+                    return Some(Ok((start, tok(token).spanned(file_start, start, end), end)));
                 }
 
                 LexerNext::FinalizeButDontEmitToken(size, next_state) => {

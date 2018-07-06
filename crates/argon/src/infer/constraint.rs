@@ -4,7 +4,7 @@ use crate::ir::InferType;
 #[cfg(test)]
 mod tests;
 
-#[derive(Debug, Hash, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Debug, Eq, PartialEq, Ord, PartialOrd)]
 crate struct Constraint {
     crate left: InferType,
     crate right: InferType,

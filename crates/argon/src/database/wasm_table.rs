@@ -24,7 +24,7 @@ impl WasmTable {
         &self,
         mut db: SharedDatabase,
         key: &AbsolutePath,
-    ) -> GetResult<VersionedCell<elements::Module>, Error> {
+    ) -> GetResult<VersionedCell<elements::Module>, ArgonError> {
         let typed = db.tables().typed().get(db.clone(), key)?;
         let file = db.get_file(key)?;
         let index = &self.index;
@@ -54,7 +54,7 @@ fn compute(
         let location: CodeLocation =
             unsafe { std::mem::transmute(builder.push_function(function)) };
 
-        let name_span = func.name.span.to_codespan_span();
+        let name_span = func.name.span;
         let name = file.src_slice(name_span)?;
 
         if func.modifiers.export {

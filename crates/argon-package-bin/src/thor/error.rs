@@ -6,7 +6,7 @@ use std::fmt;
 pub struct InternalThorError {
     status: i32,
     context: String,
-    error: failure::Error,
+    error: argon::ArgonError,
 }
 
 #[derive(Debug)]
@@ -24,6 +24,16 @@ pub enum ThorError {
 impl ThorError {
     pub fn format(&'error self, verbose: bool) -> ThorErrorFormatter<'error> {
         ThorErrorFormatter::new(self, verbose)
+    }
+}
+
+impl From<argon::ArgonError> for ThorError {
+    fn from(error: argon::ArgonError) -> ThorError {
+        ThorError::Internal(InternalThorError {
+            status: 1,
+            context: "unimplemented".to_string(),
+            error,
+        })
     }
 }
 
@@ -73,42 +83,5 @@ pub trait ErrorCode {
 impl<E: std::error::Error> ErrorCode for E {
     fn error_code(&self) -> i32 {
         1
-    }
-}
-
-impl<E: std::error::Error + ErrorCode + Sync + Send + 'static> WithUserFriendlyContext for E {
-    fn with_user_friendly_context(self, context: String) -> ThorError {
-        ThorError::Internal(InternalThorError {
-            status: self.error_code(),
-            error: self.into(),
-            context,
-        })
-    }
-}
-
-pub trait ResultWithUserFriendlyContext {
-    type Ok;
-    type Error;
-
-    fn with_user_friendly_context<F: FnOnce(&Self::Error) -> String>(
-        self,
-        context: F,
-    ) -> Result<Self::Ok, ThorError>;
-}
-
-impl<T, E: std::error::Error + ErrorCode + Sync + Send + 'static> ResultWithUserFriendlyContext
-    for Result<T, E>
-{
-    type Ok = T;
-    type Error = E;
-
-    fn with_user_friendly_context<F: FnOnce(&Self::Error) -> String>(
-        self,
-        context: F,
-    ) -> Result<Self::Ok, ThorError> {
-        self.map_err(|e| {
-            let ctx = context(&e);
-            e.with_user_friendly_context(ctx)
-        })
     }
 }

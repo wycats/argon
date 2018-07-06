@@ -12,7 +12,7 @@ impl AbsolutePath {
         &self.0
     }
 
-    pub fn expand(filename: impl AsRef<Path>) -> Result<AbsolutePath, Error> {
+    pub fn expand(filename: impl AsRef<Path>) -> Result<AbsolutePath, ArgonError> {
         let filename = filename.as_ref();
         let filename_cow = filename.to_string_lossy();
         let filename_str: &str = filename_cow.borrow();
@@ -29,12 +29,12 @@ impl AbsolutePath {
         Ok(AbsolutePath(canonical))
     }
 
-    pub fn from_canonical(filename: impl AsRef<str>) -> Result<AbsolutePath, Error> {
+    pub fn from_canonical(filename: impl AsRef<str>) -> Result<AbsolutePath, ArgonError> {
         let filename = filename.as_ref();
         let expanded = shellexpand::full(filename).with_context(|_| "shellexpand".to_string())?;
 
         if filename != expanded {
-            bail!("filename != expanded")
+            return ArgonError::bail("filename != expanded");
         }
 
         let canonical = fs::canonicalize(expanded.as_ref()).with_context(|_| {
@@ -45,7 +45,7 @@ impl AbsolutePath {
         })?;
 
         if filename != canonical.to_str().unwrap() {
-            bail!("filename != canonical")
+            return ArgonError::bail("filename != canonical");
         }
 
         Ok(AbsolutePath(canonical))

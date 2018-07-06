@@ -1,6 +1,8 @@
-use argon::{AbsolutePath, Compilation, Database, GetResult, SkipResult};
+use argon::{AbsolutePath, ArgonError, Compilation, Database, GetResult, SkipResult, ToDiagnostic};
 use argon_package::package_layout;
 use clap::Arg;
+use codespan::CodeMap;
+use codespan_reporting::Diagnostic;
 use crate::thor::{self, ClapApp, Subcommand, ThorError};
 use failure::ResultExt;
 use parity_wasm::elements::Serialize;
@@ -22,11 +24,9 @@ impl Subcommand for Build {
 
         let mut database = Database::new();
 
-        let path = AbsolutePath::expand(details.lib).with_context(|_| "expandpath".to_string())?;
+        let path = AbsolutePath::expand(details.lib)?;
 
-        database
-            .add_file(path.clone())
-            .with_context(|_| "adding path".to_string())?;
+        database.add_file(path.clone())?;
 
         let mut compilation = Compilation::new(database.shared());
 
@@ -35,7 +35,8 @@ impl Subcommand for Build {
         let module = match module {
             GetResult::Value(value) => value,
             GetResult::SkipResult(SkipResult::Error(err)) => {
-                return Err(err).with_context(|_| "getting module".to_string())?
+                print_error(err, database.codemap());
+                return Ok(());
             }
             GetResult::SkipResult(SkipResult::None) => unimplemented!(),
         };
@@ -57,5 +58,17 @@ impl Subcommand for Build {
         value.serialize(&mut file).unwrap();
 
         Ok(())
+    }
+}
+
+fn print_error(error: ArgonError, codemap: &CodeMap) {
+    match error {
+        ArgonError::CompileError(err) => {
+            let diagnostic = err.to_diagnostic();
+            let term = termcolor::StandardStream::stderr(termcolor::ColorChoice::Auto);
+            codespan_reporting::emit(term, codemap, &diagnostic);
+        }
+
+        other => unimplemented!("print_error {:?}", other),
     }
 }
