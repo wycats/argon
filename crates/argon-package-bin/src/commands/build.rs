@@ -1,4 +1,4 @@
-use argon::{AbsolutePath, Compilation, Database};
+use argon::{AbsolutePath, Compilation, Database, GetResult, SkipResult};
 use argon_package::package_layout;
 use clap::Arg;
 use crate::thor::{self, ClapApp, Subcommand, ThorError};
@@ -30,7 +30,15 @@ impl Subcommand for Build {
 
         let mut compilation = Compilation::new(database.shared());
 
-        let module = compilation.get(&path).unwrap().clone();
+        let module = compilation.get(&path);
+
+        let module = match module {
+            GetResult::Value(value) => value,
+            GetResult::SkipResult(SkipResult::Error(err)) => {
+                return Err(err).with_context(|_| "getting module".to_string())?
+            }
+            GetResult::SkipResult(SkipResult::None) => unimplemented!(),
+        };
 
         let out_file = details
             .root
@@ -45,7 +53,8 @@ impl Subcommand for Build {
         let mut file = File::create(&out_file)
             .with_context(|_| format!("cannot create {}", &out_dir.display()))?;
 
-        module.clone_value().serialize(&mut file).unwrap();
+        let value = module.clone_value();
+        value.serialize(&mut file).unwrap();
 
         Ok(())
     }

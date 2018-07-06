@@ -1,5 +1,5 @@
 // auto-generated: "lalrpop 0.15.2"
-// sha256: 586912a963749a42d1fd7557e8e161397fd94d116fe7d5e5a9182cce6af71
+// sha256: 55c9668e4f47f1f5686a6cdea592f76b8d942a4d917fd6020f3d38d73a1
 use crate::ast;
 use crate::ast::*;
 use crate::ir::*;
@@ -456,12 +456,12 @@ mod __parse__Module {
 
         #[allow(dead_code)]
         pub fn parse<
-            __TOKEN: __ToTriple<Error=crate::CompileError>,
+            __TOKEN: __ToTriple<Error=()>,
             __TOKENS: IntoIterator<Item=__TOKEN>,
         >(
             &self,
             __tokens0: __TOKENS,
-        ) -> Result<Module, __lalrpop_util::ParseError<usize, Spanned<Tok>, crate::CompileError>>
+        ) -> Result<Module, __lalrpop_util::ParseError<usize, Spanned<Tok>, ()>>
         {
             let __tokens = __tokens0.into_iter();
             let mut __tokens = __tokens.map(|t| __ToTriple::to_triple(t));
@@ -658,7 +658,7 @@ mod __parse__Module {
         __states: &mut ::std::vec::Vec<i8>,
         __symbols: &mut ::std::vec::Vec<(usize,__Symbol<>,usize)>,
         _: ::std::marker::PhantomData<()>,
-    ) -> Option<Result<Module,__lalrpop_util::ParseError<usize, Spanned<Tok>, crate::CompileError>>>
+    ) -> Option<Result<Module,__lalrpop_util::ParseError<usize, Spanned<Tok>, ()>>>
     {
         let (__pop_states, __symbol, __nonterminal) = match -__action {
             1 => {
@@ -2459,14 +2459,14 @@ pub trait __ToTriple<> {
 }
 
 impl<> __ToTriple<> for (usize, Spanned<Tok>, usize) {
-    type Error = crate::CompileError;
-    fn to_triple(value: Self) -> Result<(usize,Spanned<Tok>,usize),crate::CompileError> {
+    type Error = ();
+    fn to_triple(value: Self) -> Result<(usize,Spanned<Tok>,usize),()> {
         Ok(value)
     }
 }
-impl<> __ToTriple<> for Result<(usize, Spanned<Tok>, usize),crate::CompileError> {
-    type Error = crate::CompileError;
-    fn to_triple(value: Self) -> Result<(usize,Spanned<Tok>,usize),crate::CompileError> {
+impl<> __ToTriple<> for Result<(usize, Spanned<Tok>, usize),()> {
+    type Error = ();
+    fn to_triple(value: Self) -> Result<(usize,Spanned<Tok>,usize),()> {
         value
     }
 }

@@ -1,3 +1,4 @@
+use crate::ir::CompileError;
 use crate::prelude::*;
 
 use super::annotated;
@@ -65,7 +66,7 @@ impl Expression {
     }
 }
 
-crate fn resolve_module_names(module: &ast::Module) -> Result<Module, ResolveError> {
+crate fn resolve_module_names(module: &ast::Module) -> Result<Module, CompileError> {
     let resolver = ResolveModule { module };
     resolver.resolve()
 }
@@ -75,8 +76,8 @@ struct ResolveModule<'a> {
 }
 
 impl ResolveModule<'a> {
-    fn resolve(&self) -> Result<Module, ResolveError> {
-        let funcs: Result<Vec<Function>, ResolveError> = self
+    fn resolve(&self) -> Result<Module, CompileError> {
+        let funcs: Result<Vec<Function>, CompileError> = self
             .module
             .funcs
             .iter()
@@ -86,7 +87,7 @@ impl ResolveModule<'a> {
         Ok(Module { funcs: funcs? })
     }
 
-    fn resolve_function(&self, func: &'input ast::Function) -> Result<Function, ResolveError> {
+    fn resolve_function(&self, func: &'input ast::Function) -> Result<Function, CompileError> {
         ResolveFunction { func }.resolve()
     }
 }
@@ -107,7 +108,7 @@ impl fmt::Display for ResolveError {
 impl Fail for ResolveError {}
 
 impl<'a> ResolveFunction<'a> {
-    fn resolve(&self) -> Result<Function, ResolveError> {
+    fn resolve(&self) -> Result<Function, CompileError> {
         let ResolveFunction { func, .. } = self;
 
         let mut symbols = vec![];

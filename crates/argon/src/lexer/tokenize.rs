@@ -3,7 +3,6 @@ use crate::prelude::*;
 use super::Tok;
 use crate::ir::pos::SpannedItem;
 use crate::lexer::Token;
-use crate::CompileError;
 use unicode_xid::UnicodeXID;
 
 lazy_static! {
@@ -108,9 +107,9 @@ impl Lexer<'input> {
 }
 
 impl Iterator for Lexer<'input> {
-    type Item = Result<(usize, Token, usize), CompileError>;
+    type Item = Result<(usize, Token, usize), ()>;
 
-    fn next(&mut self) -> Option<Result<(usize, Token, usize), CompileError>> {
+    fn next(&mut self) -> Option<Result<(usize, Token, usize), ()>> {
         loop {
             let next = {
                 let Lexer { state, rest, .. } = self;
@@ -234,7 +233,7 @@ impl<'a> LexerNext<'a> {
 }
 
 impl LexerState {
-    fn next<'input>(&self, c: Option<char>, rest: &'input str) -> Result<LexerNext, CompileError> {
+    fn next<'input>(&self, c: Option<char>, rest: &'input str) -> Result<LexerNext, ()> {
         let out = match self {
             LexerState::Top => match c {
                 None => LexerNext::EOF,
@@ -248,7 +247,7 @@ impl LexerState {
                     } else if UnicodeXID::is_xid_start(c) {
                         LexerNext::transition_to(LexerState::StartIdent).reconsume()
                     } else {
-                        return Err(CompileError::LexError);
+                        return Err(());
                     }
                 }
             },

@@ -33,7 +33,7 @@ impl Database {
         let filemap = self.leaves.files.add_filemap(filename, src);
         self.leaves
             .code
-            .insert_shared(name, VersionedCell::from(Arcish::weak(&filemap)));
+            .insert_shared(name, VersionedCell::from_arcish(Arcish::weak(&filemap)));
 
         Ok(())
     }
@@ -112,16 +112,13 @@ impl Compilation<'db> {
         Compilation { database }
     }
 
-    pub fn get(
-        &mut self,
-        path: &AbsolutePath,
-    ) -> GetReifyResult<VersionedCell<elements::Module>, Error>
+    pub fn get(&mut self, path: &AbsolutePath) -> GetResult<VersionedCell<elements::Module>, Error>
     where
         Error: 'static,
     {
         self.database
             .tables()
             .wasm()
-            .get_reify(self.database.clone(), path)
+            .get(self.database.clone(), path)
     }
 }

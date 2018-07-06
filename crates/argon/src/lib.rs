@@ -36,9 +36,10 @@ pub mod grammar;
 pub use self::compilation::{Compilation, Database, SharedDatabase};
 pub use self::compile::*;
 pub use self::database::absolute_path::AbsolutePath;
+pub use self::database::{GetResult, SkipResult};
 pub use self::grammar::ModuleParser;
 pub use self::ir::*;
-pub use self::parser::ParseError;
+pub use self::parser::LalrpopParseError;
 
 crate use self::infer::unify::UnifyTable;
 

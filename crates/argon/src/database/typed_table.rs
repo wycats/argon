@@ -4,7 +4,7 @@
 use crate::prelude::*;
 
 use crate::compilation::SharedDatabase;
-use crate::database::{AbsolutePath, GetResult, Table, ValueResult, VersionedCell};
+use crate::database::{AbsolutePath, GetResult, Table, VersionedCell};
 use crate::infer::UnifyTable;
 use crate::ir::{annotated, ast, resolved};
 
@@ -25,35 +25,13 @@ impl TypedTable {
         key: &AbsolutePath,
     ) -> GetResult<VersionedCell<annotated::Module>, Error> {
         let ast = db.tables().ast().get(db.clone(), key)?;
+        let index = &self.index;
 
-        match ast {
-            ValueResult::NewValue(ast) => {
-                let typed = compile(ast)?;
-                let typed = VersionedCell::new(typed);
-                let typed = self.index.insert_shared(key.clone(), typed);
-                GetResult::value(typed)
-            }
-
-            ValueResult::ValidCache => GetResult::ValueResult(ValueResult::ValidCache),
-        }
-    }
-
-    crate fn get_reify(
-        &self,
-        db: SharedDatabase,
-        key: &AbsolutePath,
-    ) -> GetResult<VersionedCell<annotated::Module>, Error> {
-        match self.get(db, key)? {
-            ValueResult::NewValue(file) => GetResult::value(file),
-            ValueResult::ValidCache => {
-                let value = self.index.get(key)?;
-                GetResult::value(value.weak())
-            }
-        }
+        validate! { index[key] = compute(ast) }
     }
 }
 
-fn compile(ast: VersionedCell<ast::Module>) -> Result<annotated::Module, Error> {
+fn compute(ast: &VersionedCell<ast::Module>) -> GetResult<annotated::Module> {
     let mut table = UnifyTable::new();
 
     let module = resolved::resolve_module_names(&ast.value())?;
@@ -67,5 +45,5 @@ fn compile(ast: VersionedCell<ast::Module>) -> Result<annotated::Module, Error> 
     let module = substitutions.apply_module(module);
     trace!(target: "argon::compile::applies", "After Substitutions: {:#?}", module);
 
-    Ok(module)
+    GetResult::value(module)
 }

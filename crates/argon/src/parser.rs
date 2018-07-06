@@ -1,7 +1,7 @@
 use crate::lexer::{Lexer, Token};
 use crate::{ast, CompileError, ModuleParser};
 
-pub type ParseError = lalrpop_util::ParseError<usize, Token, CompileError>;
+pub type LalrpopParseError = lalrpop_util::ParseError<usize, Token, ()>;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum ErrorLocation {
@@ -9,11 +9,13 @@ pub enum ErrorLocation {
     Byte(usize),
 }
 
-pub fn parse(source: &'input str) -> Result<ast::Module, ParseError> {
-    ModuleParser::new().parse(Lexer::new(source.as_ref()))
+pub fn parse(source: &'input str) -> Result<ast::Module, CompileError> {
+    ModuleParser::new()
+        .parse(Lexer::new(source.as_ref()))
+        .map_err(|e| CompileError::ParseError(e))
 }
 
-pub fn location(error: ParseError) -> ErrorLocation {
+pub fn location(error: LalrpopParseError) -> ErrorLocation {
     match error {
         lalrpop_util::ParseError::InvalidToken { location } => ErrorLocation::Byte(location),
         lalrpop_util::ParseError::UnrecognizedToken { token: None, .. } => ErrorLocation::EOF,

@@ -1,3 +1,4 @@
+use crate::parser::LalrpopParseError;
 use crate::prelude::*;
 
 use crate::compile::math::{MathOperator, MathType};
@@ -5,8 +6,9 @@ use crate::ir::pos::{Spanned, SpannedItem};
 use crate::ir::resolved::ResolveError;
 use crate::InferType;
 
-#[derive(Debug, Eq, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum CompileError {
+    ParseError(LalrpopParseError),
     ResolveError(ResolveError),
     TypeError(TypeError),
     UnifyError(InferType, InferType),

@@ -10,30 +10,83 @@ pub fn bump() -> usize {
     REVISION.fetch_add(1, Ordering::SeqCst)
 }
 
+pub struct DerivedVersionedCell {
+    derived_revision: usize,
+}
+
+impl DerivedVersionedCell {
+    pub fn owned<T>(self, value: T) -> VersionedCell<T> {
+        VersionedCell {
+            revision: revision(),
+            derived_revision: Some(self.derived_revision),
+            value: Arcish::strong(value),
+        }
+    }
+}
+
 pub struct VersionedCell<T> {
     revision: usize,
+    derived_revision: Option<usize>,
     value: Arcish<T>,
+}
+
+crate fn derive_from_revision(revision: usize) -> DerivedVersionedCell {
+    DerivedVersionedCell {
+        derived_revision: revision,
+    }
+}
+
+pub fn derive_from<Left, Right>(
+    left: &VersionedCell<Left>,
+    right: &VersionedCell<Right>,
+) -> DerivedVersionedCell {
+    DerivedVersionedCell {
+        derived_revision: std::cmp::max(left.revision(), right.revision()),
+    }
 }
 
 impl<T> VersionedCell<T> {
     pub fn new(value: T) -> VersionedCell<T> {
         VersionedCell {
             revision: revision(),
+            derived_revision: None,
             value: Arcish::strong(value),
         }
     }
 
-    pub fn from(arcish: Arcish<T>) -> VersionedCell<T> {
+    /// For debugging purposes
+    pub fn strong_count(&self) -> usize {
+        let value = self.value.value();
+        Arc::strong_count(&value) - 1
+    }
+
+    pub fn derived(value: T, derived_revision: usize) -> VersionedCell<T> {
         VersionedCell {
             revision: revision(),
+            derived_revision: Some(derived_revision),
+            value: Arcish::strong(value),
+        }
+    }
+
+    pub fn from_arcish(arcish: Arcish<T>) -> VersionedCell<T> {
+        VersionedCell {
+            revision: revision(),
+            derived_revision: None,
             value: arcish,
         }
     }
 
-    pub fn take_weakly(arc: &Arc<T>) -> VersionedCell<T> {
+    pub fn take_weakly(arc: &Arc<T>, derived_revision: usize) -> VersionedCell<T> {
         VersionedCell {
             revision: revision(),
+            derived_revision: Some(derived_revision),
             value: Arcish::weak(arc),
+        }
+    }
+
+    pub fn derive(&self) -> DerivedVersionedCell {
+        DerivedVersionedCell {
+            derived_revision: self.revision(),
         }
     }
 
@@ -44,13 +97,24 @@ impl<T> VersionedCell<T> {
     pub fn weak(&self) -> VersionedCell<T> {
         VersionedCell {
             revision: self.revision,
+            derived_revision: self.derived_revision,
             value: self.value.as_weak_arcish(),
         }
+    }
+
+    pub fn clone_value(&self) -> T
+    where
+        T: Clone,
+    {
+        self.value.clone_value()
     }
 
     pub fn update(&self, value: T) -> VersionedCell<T> {
         VersionedCell {
             revision: bump(),
+
+            // TODO: what does this mean?
+            derived_revision: self.derived_revision,
             value: Arcish::strong(value),
         }
     }

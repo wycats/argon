@@ -3,7 +3,6 @@ use crate::prelude::*;
 use crate::compile::math::MathOperator;
 use crate::ir::{FunctionModifiers, Spanned, Type};
 use crate::lexer::{IdentifierId, Tok, Token};
-use nan_preserving_float::F64;
 
 pub type Identifier = Token;
 

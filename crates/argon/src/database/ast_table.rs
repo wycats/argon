@@ -4,7 +4,7 @@
 use crate::prelude::*;
 
 use crate::compilation::SharedDatabase;
-use crate::database::{AbsolutePath, GetResult, Table, ValueResult, VersionedCell};
+use crate::database::{AbsolutePath, GetResult, Table, VersionedCell};
 use crate::ir::ast;
 use crate::parser::parse;
 
@@ -25,26 +25,14 @@ impl AstTable {
         &self,
         db: SharedDatabase,
         key: &AbsolutePath,
-    ) -> GetResult<VersionedCell<ast::Module>, Error> {
+    ) -> GetResult<VersionedCell<ast::Module>> {
         let file = db.get_file(key)?;
+        let index = &self.index;
 
-        let parsed = parse(file.value().src())?;
-        let parsed = VersionedCell::new(parsed);
-        let parsed = self.index.insert_shared(key.clone(), parsed);
-        GetResult::value(parsed)
+        validate! { index[key] = compute(file) }
     }
+}
 
-    crate fn get_reify(
-        &self,
-        db: SharedDatabase,
-        key: &AbsolutePath,
-    ) -> GetResult<VersionedCell<ast::Module>, Error> {
-        match self.get(db, key)? {
-            ValueResult::NewValue(file) => GetResult::value(file),
-            ValueResult::ValidCache => {
-                let value = self.index.get(key)?;
-                GetResult::value(value)
-            }
-        }
-    }
+fn compute(file: &VersionedCell<FileMap>) -> GetResult<ast::Module> {
+    GetResult::value(parse(file.value().src())?)
 }

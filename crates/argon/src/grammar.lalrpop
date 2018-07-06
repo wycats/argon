@@ -78,7 +78,7 @@ F64: Expression = <"Float"> => Expression::Const(ast::ConstExpression::Float(<>.
 
 extern {
     type Location = usize;
-    type Error = crate::CompileError;
+    type Error = ();
 
     enum Spanned<Tok> {
         "export" => Spanned { node: Tok::Export, .. },
