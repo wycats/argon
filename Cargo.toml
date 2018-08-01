@@ -6,7 +6,7 @@ version = "1.0.0"
 edition = "2018"
 
 [workspace]
-members = ["crates/argon",  "crates/code-database", "crates/argon-errors", "crates/argon-utils", "crates/argon-package-bin", "crates/argon-package", "crates/tests"]
+members = ["crates/argon", "crates/argon-errors", "crates/argon-utils", "crates/argon-package-bin", "crates/argon-package", "crates/tests"]
 
 [dev-dependencies]
 wasmi = "0.2.0"
