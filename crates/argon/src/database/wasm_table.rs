@@ -22,7 +22,7 @@ impl WasmTable {
 
     crate fn get(
         &self,
-        mut db: SharedDatabase,
+        mut db: SharedDatabase<'_>,
         key: &AbsolutePath,
     ) -> GetResult<VersionedCell<elements::Module>, ArgonError> {
         let typed = db.tables().typed().get(db.clone(), key)?;

@@ -3,7 +3,7 @@ use crate::prelude::*;
 use super::{MathOperator, MathType};
 
 impl fmt::Debug for MathType {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             MathType::I32 => write!(f, "i32"),
             MathType::I64 => write!(f, "i64"),
@@ -16,7 +16,7 @@ impl fmt::Debug for MathType {
 }
 
 impl fmt::Debug for MathOperator {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let operator = match self {
             MathOperator::Add => "+",
             MathOperator::Sub => "-",

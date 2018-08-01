@@ -5,13 +5,13 @@ crate struct StdError<E: std::error::Error + Send + Sync + 'static> {
 }
 
 impl<E: std::error::Error + Send + Sync + 'static> Display for StdError<E> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         Display::fmt(&self.inner, f)
     }
 }
 
 impl<E: std::error::Error + Send + Sync + 'static> Debug for StdError<E> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         Debug::fmt(&self.inner, f)
     }
 }

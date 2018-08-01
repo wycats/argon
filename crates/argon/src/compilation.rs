@@ -28,6 +28,16 @@ impl Database {
         &self.leaves.files
     }
 
+    pub fn add(&mut self, name: AbsolutePath, src: String) -> Result<(), ArgonError> {
+        let filename = codespan::FileName::real(name.as_ref());
+        let filemap = self.leaves.files.add_filemap(filename, src);
+        self.leaves
+            .code
+            .insert_shared(name, VersionedCell::from_arcish(Arcish::weak(&filemap)));
+
+        Ok(())
+    }
+
     pub fn add_file(&mut self, name: AbsolutePath) -> Result<(), ArgonError> {
         let mut src = String::new();
         let mut file = File::open(name.as_ref())?;
@@ -112,7 +122,7 @@ pub struct Compilation<'db> {
 }
 
 impl Compilation<'db> {
-    pub fn new(database: SharedDatabase<'db>) -> Compilation {
+    pub fn new(database: SharedDatabase<'db>) -> Compilation<'_> {
         Compilation { database }
     }
 

@@ -41,7 +41,7 @@ impl Expression {
     crate fn annotate(
         self,
         vars: &mut UnifyTable,
-        env: &annotated::TypeEnv,
+        env: &annotated::TypeEnv<'_>,
     ) -> annotated::Annotated<annotated::Expression> {
         match self {
             Expression::Const(expr) => vars.annotate_fresh(annotated::Expression::Const(expr)),
@@ -100,7 +100,7 @@ struct ResolveFunction<'a> {
 pub enum ResolveError {}
 
 impl fmt::Display for ResolveError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "ResolveError")
     }
 }

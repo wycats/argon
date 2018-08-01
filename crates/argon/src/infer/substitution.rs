@@ -116,7 +116,7 @@ impl std::ops::IndexMut<usize> for Substitution {
 }
 
 impl fmt::Debug for Substitution {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_map().entries(self.solutions.iter()).finish()
     }
 }

@@ -4,6 +4,7 @@ use crate::ir::{InferType, TypeVar};
 use crate::pos::Spanned;
 use crate::CompileError;
 use ena::unify::InPlaceUnificationTable;
+use log::*;
 use std::collections::BTreeSet;
 
 crate use self::table::UnifyTable;
@@ -57,7 +58,8 @@ impl UnifyOne<'unify> {
             (
                 InferType::Resolved(Spanned { node: left, .. }),
                 InferType::Resolved(Spanned { node: right, .. }),
-            ) if left == right => {}
+            )
+                if left == right => {}
 
             (InferType::Resolved(..), InferType::Resolved(..)) => {
                 return Err(CompileError::Unimplemented)
@@ -74,7 +76,9 @@ impl UnifyOne<'unify> {
                 };
             }
 
-            (r @ InferType::Resolved(..), c @ InferType::Constrained(..)) => self.constrain(c, r)?,
+            (r @ InferType::Resolved(..), c @ InferType::Constrained(..)) => {
+                self.constrain(c, r)?
+            }
 
             (InferType::Constrained(..), InferType::Constrained(..)) => {
                 // float literals and int literals unify, but eventually we need a better

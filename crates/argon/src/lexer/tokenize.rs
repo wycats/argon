@@ -3,6 +3,8 @@ use crate::prelude::*;
 use super::Tok;
 use crate::ir::pos::SpannedItem;
 use crate::lexer::Token;
+use lazy_static::*;
+use log::*;
 use unicode_xid::UnicodeXID;
 
 lazy_static! {
@@ -240,7 +242,7 @@ impl<'a> LexerNext<'a> {
 }
 
 impl LexerState {
-    fn next<'input>(&self, c: Option<char>, rest: &'input str) -> Result<LexerNext, ()> {
+    fn next<'input>(&self, c: Option<char>, rest: &'input str) -> Result<LexerNext<'_>, ()> {
         let out = match self {
             LexerState::Top => match c {
                 None => LexerNext::EOF,

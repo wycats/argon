@@ -7,6 +7,7 @@ use crate::compilation::SharedDatabase;
 use crate::database::{AbsolutePath, GetResult, Table, VersionedCell};
 use crate::infer::UnifyTable;
 use crate::ir::{annotated, ast, resolved};
+use log::*;
 
 pub struct TypedTable {
     index: Table<AbsolutePath, annotated::Module>,
@@ -21,7 +22,7 @@ impl TypedTable {
 
     crate fn get(
         &self,
-        db: SharedDatabase,
+        db: SharedDatabase<'_>,
         key: &AbsolutePath,
     ) -> GetResult<VersionedCell<annotated::Module>, ArgonError> {
         let ast = db.tables().ast().get(db.clone(), key)?;

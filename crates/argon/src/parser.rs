@@ -15,18 +15,22 @@ pub fn parse(source: &'input str, codespan_start: usize) -> Result<ast::Module, 
         .map_err(|e| CompileError::ParseError(e))
 }
 
-pub fn location(error: LalrpopParseError) -> ErrorLocation {
+pub fn location(error: CompileError) -> ErrorLocation {
     match error {
-        lalrpop_util::ParseError::InvalidToken { location } => ErrorLocation::Byte(location),
-        lalrpop_util::ParseError::UnrecognizedToken { token: None, .. } => ErrorLocation::EOF,
-        lalrpop_util::ParseError::UnrecognizedToken {
-            token: Some((location, ..)),
-            ..
-        } => ErrorLocation::Byte(location),
-        lalrpop_util::ParseError::ExtraToken {
-            token: (location, ..),
-            ..
-        } => ErrorLocation::Byte(location),
-        lalrpop_util::ParseError::User { error } => panic!("{:?}", error),
+        CompileError::ParseError(err) => match err {
+            lalrpop_util::ParseError::InvalidToken { location } => ErrorLocation::Byte(location),
+            lalrpop_util::ParseError::UnrecognizedToken { token: None, .. } => ErrorLocation::EOF,
+            lalrpop_util::ParseError::UnrecognizedToken {
+                token: Some((location, ..)),
+                ..
+            } => ErrorLocation::Byte(location),
+            lalrpop_util::ParseError::ExtraToken {
+                token: (location, ..),
+                ..
+            } => ErrorLocation::Byte(location),
+            lalrpop_util::ParseError::User { error } => panic!("{:?}", error),
+        },
+
+        other => panic!("Cannot get location from {}", other),
     }
 }

@@ -1,8 +1,9 @@
 use parity_wasm::elements;
 use wasmi;
-use argon::ParseError;
 
 crate mod coerce;
+
+pub type ParseError = argon::LalrpopParseError;
 
 pub fn invoke(
     module: &elements::Module,
@@ -45,22 +46,22 @@ macro_rules! syntax {
     ($mod_name:ident { module $syntax:expr; invoke $name:ident ($($args:expr),*) = $expected:tt }) => {
         #[allow(unused)]
         mod $mod_name {
-            use argon::test_helpers::*;
-
             use crate::invoke;
-            use argon::{ast, compile_module, parser};
+            use argon::{ast, parser};
             use argon::ir::Type;
             use nan_preserving_float::{F32, F64};
 
-            fn module() -> ast::Module<'static> {
+            fn module() -> ast::Module {
                 println!("{}", $syntax);
-                parser::parse($syntax).unwrap()
+                parser::parse($syntax, 0).unwrap()
             }
 
             #[test]
             fn test_compile() {
                 crate::init_logger();
-                let module = compile_module(&module());
+                let mut path = std::path::PathBuf::new();
+                path.push("/");
+                let module = argon::compile_module(path, $syntax.to_string());
                 let value = invoke(&module.unwrap(), stringify!($name), &runtime_values!($($args),*));
 
                 assert_eq!(value, return_type!($expected));
@@ -71,14 +72,12 @@ macro_rules! syntax {
     ($mod_name:ident { module $syntax:expr; parse as |$module_builder:ident| $parse:expr; invoke $name:ident ($($args:expr),*) = $expected:tt }) => {
         #[allow(unused)]
         mod $mod_name {
-            use argon::test_helpers::*;
-
             use crate::invoke;
             use argon::{ast, compile_module, parser};
             use argon::ir::Type;
             use nan_preserving_float::{F32, F64};
 
-            fn module() -> ast::Module<'static> {
+            fn module() -> ast::Module {
                 println!("{}", $syntax);
                 parser::parse($syntax).unwrap()
             }
@@ -87,7 +86,7 @@ macro_rules! syntax {
             fn test_parse() {
                 crate::init_logger();
 
-                let expected: Vec<ast::Module<'static>> = 
+                let expected: Vec<ast::Module> = 
                     AstBuilder::new().module(|$module_builder| $parse).done();
 
                 assert_eq!(vec![module()], expected);
@@ -110,13 +109,12 @@ macro_rules! compile_error {
     ($mod_name:ident { module $syntax:expr; error at $pos:expr }) => {
         #[allow(unused)]
         mod $mod_name {
-            use argon::{ast, compile_module, parser};
+            use argon::{CompileError, ast, parser};
             use argon::ir::{Type};
             use nan_preserving_float::{F32, F64};
-            use $crate::ParseError;
 
-            fn module() -> Result<ast::Module<'static>, ParseError<'static>> {
-                parser::parse($syntax)
+            fn module() -> Result<ast::Module, CompileError> {
+                parser::parse($syntax, 0)
             }
 
             #[test]

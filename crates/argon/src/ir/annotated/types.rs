@@ -16,7 +16,7 @@ impl TypeVar {
 }
 
 impl fmt::Debug for TypeVar {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "<T{}>", self.var)
     }
 }
@@ -80,7 +80,7 @@ impl InferType {
 }
 
 impl fmt::Display for InferType {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             InferType::Resolved(ty) => write!(f, "{:?}", ty),
             InferType::Constrained(constrained) => write!(f, "{:?}", constrained),

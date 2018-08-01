@@ -3,6 +3,7 @@ use crate::prelude::*;
 use crate::compile::math::MathOperator;
 use crate::ir::{FunctionModifiers, Spanned, Type};
 use crate::lexer::{IdentifierId, Tok, Token};
+use derive_new::*;
 
 pub type Identifier = Token;
 
@@ -13,7 +14,7 @@ pub struct Parameter {
 }
 
 impl fmt::Debug for Parameter {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{:?}: {:?}", self.name, self.ty)
     }
 }
@@ -30,7 +31,7 @@ impl Parameters {
 }
 
 impl fmt::Debug for Parameters {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_list().entries(self.list.iter()).finish()
     }
 }
@@ -92,7 +93,7 @@ fn function_mappings(args: &Parameters) -> BTreeMap<IdentifierId, u32> {
 }
 
 impl fmt::Debug for Function {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_map()
             .entry(&"name", &self.name)
             .entry(&"args", &self.args)
@@ -114,7 +115,7 @@ pub struct Block {
 }
 
 impl fmt::Debug for Block {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_list().entries(self.expressions.iter()).finish()
     }
 }
@@ -188,7 +189,7 @@ impl ConstExpression {
 }
 
 impl fmt::Debug for ConstExpression {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             ConstExpression::Integer(int) => write!(f, "{:?}", *int),
             ConstExpression::Float(float) => write!(f, "{:?}", *float),
@@ -220,7 +221,7 @@ impl Expression {
 }
 
 impl fmt::Debug for Expression {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let value: &dyn fmt::Debug = match self {
             Expression::Const(constant) => constant,
             Expression::VariableAccess(id) => id,
@@ -240,7 +241,7 @@ pub struct BinaryExpression {
 }
 
 impl fmt::Debug for BinaryExpression {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{:?} + {:?}", self.lhs, self.rhs)
     }
 }

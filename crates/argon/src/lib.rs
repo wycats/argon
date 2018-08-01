@@ -6,22 +6,9 @@
 #![deny(unused_must_use)]
 #![allow(unused_extern_crates)]
 
-#[macro_use]
-extern crate derive_new;
-
-#[macro_use]
-extern crate log;
-
-#[macro_use]
-extern crate failure;
-
-#[macro_use]
-extern crate lazy_static;
-
-#[macro_use]
-pub mod database;
 pub mod compilation;
 pub mod compile;
+pub mod database;
 pub mod debuggable;
 crate mod errors;
 crate mod infer;
@@ -34,6 +21,7 @@ crate mod prelude;
 pub mod grammar;
 
 pub use self::compilation::{Compilation, Database, SharedDatabase};
+pub use self::compile::compile as compile_module;
 pub use self::compile::*;
 pub use self::database::absolute_path::AbsolutePath;
 pub use self::database::{GetResult, SkipResult};

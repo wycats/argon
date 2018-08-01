@@ -4,6 +4,7 @@ use crate::infer::{Constraints, Substitution};
 use crate::pos::Spanned;
 use crate::{CompileError, InferType};
 use ena::unify::{InPlaceUnificationTable, UnifyKey, UnifyValue};
+use log::*;
 use std::collections::BTreeSet;
 
 impl UnifyKey for TypeVar {
@@ -30,7 +31,8 @@ impl UnifyValue for InferType {
             (
                 InferType::Resolved(lhs @ Spanned { .. }),
                 InferType::Resolved(rhs @ Spanned { .. }),
-            ) if lhs.node == rhs.node =>
+            )
+                if lhs.node == rhs.node =>
             {
                 Ok(InferType::Resolved(lhs.clone()))
             }

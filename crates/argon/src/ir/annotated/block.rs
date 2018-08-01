@@ -15,7 +15,7 @@ impl Block {
     crate fn from(
         block: resolved::Block,
         vars: &mut UnifyTable,
-        env: &TypeEnv,
+        env: &TypeEnv<'_>,
     ) -> Annotated<Block> {
         let expressions = block
             .expressions

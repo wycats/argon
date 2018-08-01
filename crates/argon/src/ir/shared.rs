@@ -2,6 +2,7 @@ use crate::prelude::*;
 
 use crate::compile::math::MathType;
 use crate::ir::pos::{Spanned, SpannedItem};
+use derive_new::*;
 
 #[derive(PartialEq, Copy, Clone)]
 pub enum ConstExpression {
@@ -14,7 +15,7 @@ pub enum ConstExpression {
 }
 
 impl fmt::Debug for ConstExpression {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             ConstExpression::I32(int) => write!(f, "{:?}", *int),
             ConstExpression::I64(int) => write!(f, "{:?}", *int),
@@ -105,7 +106,7 @@ impl Type {
 }
 
 impl fmt::Debug for Type {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Type::Math(ty) => write!(f, "{:?}", ty),
             Type::Function(box FunctionType { params, ret }) => write!(

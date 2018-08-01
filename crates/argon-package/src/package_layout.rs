@@ -16,7 +16,7 @@ pub fn package_layout(filename: &str) -> Result<PackageLayout, Error> {
 
     let layout = PackageLayout {
         name: manifest.project.name.clone(),
-        root: root.to_owned().into_boxed_path(),
+        root: root.to_owned(),
         manifest: root.join("Argon.toml").into_boxed_path(),
         lib: root.join("src").join("lib.argon").into_boxed_path(),
         out: root.join("out").into_boxed_path(),

@@ -23,7 +23,7 @@ impl AstTable {
 impl AstTable {
     crate fn get(
         &self,
-        db: SharedDatabase,
+        db: SharedDatabase<'_>,
         key: &AbsolutePath,
     ) -> GetResult<VersionedCell<ast::Module>> {
         let file = db.get_file(key)?;
