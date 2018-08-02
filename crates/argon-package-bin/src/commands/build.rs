@@ -2,11 +2,12 @@ use argon::{AbsolutePath, ArgonError, Compilation, Database, GetResult, SkipResu
 use argon_package::package_layout;
 use clap::Arg;
 use codespan::CodeMap;
-use codespan_reporting::Diagnostic;
 use crate::thor::{self, ClapApp, Subcommand, ThorError};
 use failure::ResultExt;
 use parity_wasm::elements::Serialize;
 use std::fs::{self, File};
+use std::path::Path;
+use std::path::PathBuf;
 
 pub struct Build;
 
@@ -35,7 +36,7 @@ impl Subcommand for Build {
         let module = match module {
             GetResult::Value(value) => value,
             GetResult::SkipResult(SkipResult::Error(err)) => {
-                print_error(err, database.codemap());
+                print_error(err, database.codemap(), &details.root);
                 return Ok(());
             }
             GetResult::SkipResult(SkipResult::None) => unimplemented!(),
@@ -61,14 +62,37 @@ impl Subcommand for Build {
     }
 }
 
-fn print_error(error: ArgonError, codemap: &CodeMap) {
+fn print_error(error: ArgonError, codemap: &CodeMap, root: &Path) {
     match error {
         ArgonError::CompileError(err) => {
             let diagnostic = err.to_diagnostic();
-            let term = termcolor::StandardStream::stderr(termcolor::ColorChoice::Auto);
-            codespan_reporting::emit(term, codemap, &diagnostic);
+            let term = language_reporting::termcolor::StandardStream::stderr(
+                language_reporting::termcolor::ColorChoice::Auto,
+            );
+            language_reporting::emit(
+                term,
+                codemap,
+                &diagnostic,
+                &Config {
+                    root: root.to_path_buf(),
+                },
+            ).unwrap();
         }
 
         other => unimplemented!("print_error {:?}", other),
+    }
+}
+
+#[derive(Debug)]
+struct Config {
+    root: PathBuf,
+}
+
+impl language_reporting::Config for Config {
+    fn filename(&self, path: &Path) -> String {
+        pathdiff::diff_paths(path, &self.root)
+            .unwrap()
+            .display()
+            .to_string()
     }
 }
