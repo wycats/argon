@@ -1,9 +1,10 @@
+use crate::prelude::*;
+
 use super::types::InferType;
 use super::{Annotated, Expression, TypeEnv};
 use crate::infer::unify::UnifyTable;
 use crate::infer::{Constraint, Constraints};
-use crate::ir::pos::SpannedItem;
-use crate::ir::resolved;
+use crate::ir::{resolved, Spanned, SpannedItem};
 use crate::Type;
 
 #[derive(Debug, Clone)]
@@ -13,11 +14,14 @@ crate struct Block {
 
 impl Block {
     crate fn from(
-        block: resolved::Block,
+        block: Spanned<resolved::Block>,
         vars: &mut UnifyTable,
         env: &TypeEnv<'_>,
     ) -> Annotated<Block> {
+        let span = block.span();
+
         let expressions = block
+            .node
             .expressions
             .into_iter()
             .map(|e| e.annotate(vars, &env))
@@ -25,7 +29,7 @@ impl Block {
 
         Annotated {
             item: Block { expressions },
-            ty: vars.fresh(),
+            ty: vars.fresh(span),
         }
     }
 }

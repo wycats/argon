@@ -230,7 +230,7 @@ mod tests {
 
         let mut types = types();
 
-        let x = types.fresh();
+        let x = types.synthetic();
 
         let substitution = types.unify(Constraints(Constraint(x.clone(), InferType::i32())));
         let expected = Substitution::from(&[(0, InferType::i32())]);
@@ -244,8 +244,8 @@ mod tests {
 
         let mut types = types();
 
-        let t1 = types.fresh();
-        let t2 = types.fresh();
+        let t1 = types.synthetic();
+        let t2 = types.synthetic();
 
         // def add(x: i64) -> i64 { x + 50 }
 
@@ -265,8 +265,8 @@ mod tests {
 
         let mut types = types();
 
-        let t1 = types.fresh();
-        let t2 = types.fresh();
+        let t1 = types.synthetic();
+        let t2 = types.synthetic();
 
         let substitution = types.unify(Constraints(Constraint(
             InferType::variable_function(vec![t1.clone()], InferType::bool()),
@@ -284,10 +284,10 @@ mod tests {
 
         let mut types = types();
 
-        let t0 = types.fresh();
-        let t1 = types.fresh();
-        let t2 = types.fresh();
-        let t3 = types.fresh();
+        let t0 = types.synthetic();
+        let t1 = types.synthetic();
+        let t2 = types.synthetic();
+        let t3 = types.synthetic();
 
         let constraints = Constraint(t0.clone(), t1.clone())
             + Constraint(t0.clone(), t2.clone())

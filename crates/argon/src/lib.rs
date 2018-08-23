@@ -1,4 +1,4 @@
-#![feature(crate_visibility_modifier)]
+#![feature(in_band_lifetimes)]
 #![feature(box_patterns)]
 #![feature(box_syntax)]
 #![feature(try_trait)]

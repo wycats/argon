@@ -28,10 +28,10 @@ impl Annotated<Expression> {
         }
     }
 
-    crate fn var(ty: InferType, term: u32) -> Annotated<Expression> {
+    crate fn var(ty: InferType, term: usize) -> Annotated<Expression> {
         Annotated {
             ty,
-            item: Expression::VariableAccess(term),
+            item: Expression::VariableAccess(term.synthetic("test")),
         }
     }
 

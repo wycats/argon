@@ -14,7 +14,7 @@ crate fn compile_expression(
         annotated::Expression::Const(constant) => body.push(compile_const(constant, ty)),
 
         annotated::Expression::VariableAccess(local) => {
-            body.push(elements::Opcode::GetLocal(*local));
+            body.push(elements::Opcode::GetLocal(local.node as u32));
         }
 
         annotated::Expression::Apply(..) => unimplemented!(),

@@ -47,8 +47,8 @@ Type: Spanned<Type> = {
     "f64" => Type::f64().copy_span(&<>),
 }
 
-Block: Block = {
-    "{" <(<Expression>)*> "}" => Block::new(<>)
+Block: Spanned<Block> = {
+    <open:"{"> <exprs:(<Expression>)*> <close:"}"> <r: @R> => Block::new(exprs).with_span(open.span().to(close.span()))
 }
 
 Expression: Expression = {

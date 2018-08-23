@@ -1,15 +1,15 @@
 use super::Substitution;
-use crate::ir::{InferType, TypeVar};
-use std::collections::BTreeMap;
+use crate::ir::{InferType, RawTypeVar};
+use crate::prelude::*;
 
 impl Substitution {
     crate fn from(tuples: impl AsRef<[(usize, InferType)]>) -> Substitution {
-        let mut map = BTreeMap::new();
+        let mut sub = Substitution::empty();
 
         for (var, ty) in tuples.as_ref() {
-            map.insert(TypeVar::new(*var), ty.clone());
+            sub.set(RawTypeVar { var: *var }.synthetic("synthetic"), ty.clone());
         }
 
-        Substitution { solutions: map }
+        sub
     }
 }

@@ -11,7 +11,7 @@ crate use self::block::Block;
 crate use self::expression::Expression;
 crate use self::function::Function;
 crate use self::module::Module;
-crate use self::types::{InferType, TypeEnv, TypeVar};
+crate use self::types::{InferType, RawTypeVar, TypeEnv, TypeVar};
 
 impl InferType {
     crate fn annotate<T>(self, item: T) -> Annotated<T> {

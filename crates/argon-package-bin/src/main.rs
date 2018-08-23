@@ -1,3 +1,5 @@
+#![feature(in_band_lifetimes)]
+
 #[cfg(test)]
 #[macro_use]
 extern crate indoc;

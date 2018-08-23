@@ -1,14 +1,17 @@
+#[allow(unused_imports)]
+use crate::prelude::*;
+
 use super::types::InferType;
 use super::Annotated;
+use codespan::ByteSpan;
 use crate::infer::{Constraint, Constraints};
-use crate::ir::ast;
-use crate::ir::Spanned;
+use crate::ir::{ast, Span, Spanned};
 use crate::MathOperator;
 
 #[derive(Debug, Clone)]
 crate enum Expression {
     Const(ast::ConstExpression),
-    VariableAccess(u32),
+    VariableAccess(Spanned<usize>),
 
     #[allow(unused)]
     Apply(Box<Annotated<Expression>>, Vec<Annotated<Expression>>),
@@ -22,6 +25,20 @@ crate enum Expression {
 impl Expression {
     crate fn annotate(self, ty: InferType) -> Annotated<Expression> {
         Annotated { item: self, ty }
+    }
+}
+
+impl Span for Expression {
+    fn span(&self) -> ByteSpan {
+        match self {
+            Expression::Const(constant) => constant.span(),
+            Expression::VariableAccess(var) => var.span(),
+            Expression::Binary {
+                box lhs, box rhs, ..
+            } => lhs.span().to(rhs.span()),
+
+            _ => unimplemented!(),
+        }
     }
 }
 
@@ -39,11 +56,10 @@ impl Annotated<Expression> {
 
                 let args = args.iter().map(|a| a.ty.clone()).collect();
 
-                function.constraints() + arg_constraints
-                    + Constraints(Constraint(
-                        function.ty.clone(),
-                        InferType::variable_function(args, ty.clone()),
-                    ))
+                function.constraints() + arg_constraints + Constraints(Constraint(
+                    function.ty.clone(),
+                    InferType::variable_function(args, ty.clone()),
+                ))
             }
             Expression::Const(constant) => match constant {
                 ast::ConstExpression::Bool(..) => {

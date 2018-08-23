@@ -1,21 +1,17 @@
 use crate::prelude::*;
 
 use codespan::ByteSpan;
-use crate::ir::{Spanned, SpannedItem};
+use crate::ir::{Span, Spanned, SpannedItem};
 use crate::{MathType, Type};
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
-pub struct TypeVar {
+pub struct RawTypeVar {
     crate var: usize,
 }
 
-impl TypeVar {
-    crate fn new(var: usize) -> TypeVar {
-        TypeVar { var }
-    }
-}
+pub type TypeVar = Spanned<RawTypeVar>;
 
-impl fmt::Debug for TypeVar {
+impl fmt::Debug for RawTypeVar {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "<T{}>", self.var)
     }
@@ -74,6 +70,7 @@ impl InferType {
     pub fn span(&self) -> ByteSpan {
         match self {
             InferType::Resolved(ty) => ty.span,
+            InferType::Variable(var) => var.span(),
             other => unimplemented!("turning {:?} into ByteSpan", other),
         }
     }

@@ -1,7 +1,8 @@
 use crate::prelude::*;
 
+use codespan::ByteSpan;
 use crate::compile::math::MathOperator;
-use crate::ir::{FunctionModifiers, Spanned, Type};
+use crate::ir::{FunctionModifiers, Span, Spanned, Type};
 use crate::lexer::{IdentifierId, Tok, Token};
 use derive_new::*;
 
@@ -57,13 +58,18 @@ pub struct Function {
     pub name: Identifier,
     pub args: Parameters,
     pub ret: Spanned<Type>,
-    pub body: Block,
+    pub body: Spanned<Block>,
     pub modifiers: FunctionModifiers,
-    crate mappings: BTreeMap<IdentifierId, u32>,
+    crate mappings: BTreeMap<IdentifierId, usize>,
 }
 
 impl Function {
-    pub fn new(name: Identifier, args: Parameters, ret: Spanned<Type>, body: Block) -> Function {
+    pub fn new(
+        name: Identifier,
+        args: Parameters,
+        ret: Spanned<Type>,
+        body: Spanned<Block>,
+    ) -> Function {
         let mappings = function_mappings(&args);
 
         Function {
@@ -82,11 +88,11 @@ impl Function {
     }
 }
 
-fn function_mappings(args: &Parameters) -> BTreeMap<IdentifierId, u32> {
+fn function_mappings(args: &Parameters) -> BTreeMap<IdentifierId, usize> {
     let mut map = BTreeMap::new();
 
     for (i, (name, _)) in args.iter().enumerate() {
-        map.insert(name.to_ident(), i as u32);
+        map.insert(name.to_ident(), i);
     }
 
     map
@@ -125,6 +131,16 @@ pub enum ConstExpression {
     Integer(Spanned<i32>),
     Float(Spanned<F64>),
     Bool(Spanned<bool>),
+}
+
+impl Span for ConstExpression {
+    fn span(&self) -> ByteSpan {
+        match self {
+            ConstExpression::Integer(Spanned { span, .. }) => *span,
+            ConstExpression::Float(Spanned { span, .. }) => *span,
+            ConstExpression::Bool(Spanned { span, .. }) => *span,
+        }
+    }
 }
 
 #[derive(PartialEq, Copy, Clone)]
@@ -220,6 +236,16 @@ impl Expression {
     }
 }
 
+impl Span for Expression {
+    fn span(&self) -> ByteSpan {
+        match self {
+            Expression::Const(constant) => constant.span(),
+            Expression::VariableAccess(id) => id.span(),
+            Expression::Binary(_op, _tok, box binary) => binary.span(),
+        }
+    }
+}
+
 impl fmt::Debug for Expression {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let value: &dyn fmt::Debug = match self {
@@ -238,6 +264,12 @@ impl fmt::Debug for Expression {
 pub struct BinaryExpression {
     pub lhs: Expression,
     pub rhs: Expression,
+}
+
+impl Span for BinaryExpression {
+    fn span(&self) -> ByteSpan {
+        self.lhs.span().to(self.rhs.span())
+    }
 }
 
 impl fmt::Debug for BinaryExpression {

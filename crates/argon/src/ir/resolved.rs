@@ -1,9 +1,10 @@
 use crate::prelude::*;
 
 use super::annotated;
+use codespan::ByteSpan;
 use crate::lexer::Token;
 use crate::CompileError;
-use crate::{ast, FunctionModifiers, MathOperator, Spanned, SpannedItem, Type, UnifyTable};
+use crate::{ast, FunctionModifiers, MathOperator, Span, Spanned, SpannedItem, Type, UnifyTable};
 use failure::Fail;
 
 #[derive(Debug)]
@@ -17,24 +18,36 @@ pub struct Function {
     pub params: Vec<Spanned<Type>>,
     pub symbols: Vec<Token>,
     pub ret: Spanned<Type>,
-    pub body: Block,
+    pub body: Spanned<Block>,
     pub modifiers: FunctionModifiers,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Block {
     pub expressions: Vec<Expression>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Expression {
     Const(ast::ConstExpression),
-    VariableAccess(u32),
+    VariableAccess(Spanned<usize>),
     Binary {
         operator: Spanned<MathOperator>,
         lhs: Box<Expression>,
         rhs: Box<Expression>,
     },
+}
+
+impl Span for Expression {
+    fn span(&self) -> ByteSpan {
+        match self {
+            Expression::Const(constant) => constant.span(),
+            Expression::VariableAccess(id) => id.span(),
+            Expression::Binary {
+                box lhs, box rhs, ..
+            } => lhs.span().to(rhs.span()),
+        }
+    }
 }
 
 impl Expression {
@@ -44,9 +57,11 @@ impl Expression {
         env: &annotated::TypeEnv<'_>,
     ) -> annotated::Annotated<annotated::Expression> {
         match self {
-            Expression::Const(expr) => vars.annotate_fresh(annotated::Expression::Const(expr)),
+            Expression::Const(expr) => {
+                vars.annotate_fresh(annotated::Expression::Const(expr), expr.span())
+            }
             Expression::VariableAccess(id) => {
-                let ty = env.get_local(id as usize);
+                let ty = env.get_local(id.node);
                 annotated::InferType::Resolved(ty)
                     .annotate(annotated::Expression::VariableAccess(id))
             }
@@ -55,7 +70,7 @@ impl Expression {
                 box lhs,
                 box rhs,
             } => {
-                let t1 = vars.fresh();
+                let t1 = vars.fresh(lhs.span().to(rhs.span()));
                 t1.annotate(annotated::Expression::Binary {
                     operator,
                     lhs: box lhs.annotate(vars, env),
@@ -123,7 +138,7 @@ impl<'a> ResolveFunction<'a> {
 
         let mut expressions = vec![];
 
-        for expr in &func.body.expressions {
+        for expr in &func.body.node.expressions {
             expressions.push(self.resolve_expression(expr)?);
         }
 
@@ -132,7 +147,7 @@ impl<'a> ResolveFunction<'a> {
             params,
             symbols,
             ret,
-            body: Block { expressions },
+            body: Block { expressions }.copy_span(&func.body),
             modifiers: func.modifiers,
         })
     }
@@ -141,8 +156,8 @@ impl<'a> ResolveFunction<'a> {
         let expr = match expr {
             ast::Expression::Const(constant) => Expression::Const(*constant),
             ast::Expression::VariableAccess(id) => {
-                let local = self.func.mappings.get(&id.to_ident()).unwrap();
-                Expression::VariableAccess(*local)
+                let local = *self.func.mappings.get(&id.to_ident()).unwrap();
+                Expression::VariableAccess(local.copy_span(id))
             }
             ast::Expression::Binary(operator, tok, box ast::BinaryExpression { lhs, rhs }) => {
                 let lhs = self.resolve_expression(lhs)?;

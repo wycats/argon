@@ -1,4 +1,4 @@
-use crate::annotated::{self, Annotated, TypeVar};
+use crate::annotated::{self, Annotated, RawTypeVar, TypeVar};
 use crate::ir::InferType;
 use std::collections::BTreeMap;
 use std::fmt;
@@ -8,18 +8,21 @@ mod test_helpers;
 
 #[derive(Eq, PartialEq)]
 crate struct Substitution {
-    solutions: BTreeMap<TypeVar, InferType>,
+    solutions: BTreeMap<RawTypeVar, InferType>,
+    spanned: BTreeMap<RawTypeVar, TypeVar>,
 }
 
 impl Substitution {
     crate fn empty() -> Substitution {
         Substitution {
             solutions: BTreeMap::new(),
+            spanned: BTreeMap::new(),
         }
     }
 
     crate fn set(&mut self, key: TypeVar, ty: InferType) {
-        self.solutions.insert(key, ty);
+        self.solutions.insert(key.node, ty);
+        self.spanned.insert(key.node, key);
     }
 
     crate fn apply_module(&self, module: annotated::Module) -> annotated::Module {
@@ -90,7 +93,7 @@ impl Substitution {
 
     crate fn apply_ty(&self, ty: InferType) -> InferType {
         match ty {
-            InferType::Variable(var) => self.solutions[&var].clone(),
+            InferType::Variable(var) => self.solutions[&var.node].clone(),
             r @ InferType::Resolved(..) => r,
 
             other => panic!(
@@ -105,13 +108,13 @@ impl std::ops::Index<usize> for Substitution {
     type Output = InferType;
 
     fn index(&self, key: usize) -> &InferType {
-        self.solutions.get(&TypeVar::new(key)).unwrap()
+        self.solutions.get(&RawTypeVar { var: key }).unwrap()
     }
 }
 
 impl std::ops::IndexMut<usize> for Substitution {
     fn index_mut(&mut self, key: usize) -> &mut InferType {
-        self.solutions.get_mut(&TypeVar::new(key)).unwrap()
+        self.solutions.get_mut(&RawTypeVar { var: key }).unwrap()
     }
 }
 

@@ -11,6 +11,16 @@ pub struct Spanned<Node: PartialEq + Debug> {
     crate span: ByteSpan,
 }
 
+impl<T: PartialEq + Debug> Span for Spanned<T> {
+    fn span(&self) -> ByteSpan {
+        self.span
+    }
+}
+
+pub trait Span {
+    fn span(&self) -> ByteSpan;
+}
+
 impl<Node: PartialEq + fmt::Display + fmt::Debug> fmt::Display for Spanned<Node> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if f.alternate() {
@@ -23,7 +33,13 @@ impl<Node: PartialEq + fmt::Display + fmt::Debug> fmt::Display for Spanned<Node>
 
 crate trait SpannedItem: Sized + PartialEq + Debug {
     fn spanned(self, start: usize, l: usize, r: usize) -> Spanned<Self>;
+    fn with_span(self, span: ByteSpan) -> Spanned<Self>;
     fn copy_span<T: PartialEq + Debug>(self, item: &Spanned<T>) -> Spanned<Self>;
+    fn copy_spans<T: PartialEq + Debug, U: PartialEq + Debug>(
+        self,
+        start: &Spanned<T>,
+        end: &Spanned<U>,
+    ) -> Spanned<Self>;
     fn synthetic(self, desc: &'static str) -> Spanned<Self>;
 }
 
@@ -35,10 +51,25 @@ impl<T: PartialEq + Debug> SpannedItem for T {
         }
     }
 
+    fn with_span(self, span: ByteSpan) -> Spanned<Self> {
+        Spanned { node: self, span }
+    }
+
     fn copy_span<U: PartialEq + Debug>(self, item: &Spanned<U>) -> Spanned<Self> {
         Spanned {
             node: self,
             span: item.span,
+        }
+    }
+
+    fn copy_spans<U: PartialEq + Debug, V: PartialEq + Debug>(
+        self,
+        start: &Spanned<U>,
+        end: &Spanned<V>,
+    ) -> Spanned<Self> {
+        Spanned {
+            node: self,
+            span: start.span.to(end.span),
         }
     }
 

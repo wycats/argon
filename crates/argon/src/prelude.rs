@@ -4,6 +4,7 @@ crate use codespan::FileMap;
 crate use crate::errors::compile_error::{CompileError, ToDiagnostic};
 crate use crate::errors::error::IntoError;
 crate use crate::errors::ArgonError;
+crate use crate::ir::pos::{Span, SpannedItem};
 crate use failure::Fail;
 crate use failure::ResultExt;
 crate use itertools::Itertools;
