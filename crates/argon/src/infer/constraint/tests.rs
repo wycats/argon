@@ -2,6 +2,7 @@ use super::{Constraint, Constraints};
 use crate::infer::UnifyTable;
 use crate::ir::annotated::{Annotated, Expression};
 use crate::ir::InferType as Type;
+use crate::prelude::*;
 
 type Term = Annotated<Expression>;
 
@@ -18,7 +19,7 @@ fn constrains_int() {
 
     assert_eq!(
         term.constraints(),
-        Constraints(Constraint(t1, Type::integer()))
+        Constraints(Constraint::double(t1, Type::integer(&().synthetic("test"))))
     )
 }
 
@@ -31,7 +32,7 @@ fn constrains_bool() {
 
     assert_eq!(
         term.constraints(),
-        Constraints(Constraint(t1, Type::bool()))
+        Constraints(Constraint::double(t1, Type::bool()))
     )
 }
 
@@ -57,7 +58,7 @@ fn constrains_app() {
     let arg = Term::var(t3.clone(), 1);
     let application = Term::apply(t1.clone(), func, vec![arg]);
 
-    let expected = Constraints::empty() + Constraint(
+    let expected = Constraints::empty() + Constraint::double(
         t2.clone(),
         Type::variable_function(vec![t3.clone()], t1.clone()),
     );

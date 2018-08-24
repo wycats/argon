@@ -1,6 +1,7 @@
 mod debug;
 
 use parity_wasm::elements::{self, Opcode};
+use std::fmt;
 
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub enum MathType {
@@ -10,6 +11,23 @@ pub enum MathType {
     U64,
     F32,
     F64,
+}
+
+impl fmt::Display for MathType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        use self::MathType::*;
+
+        let s = match self {
+            I32 => "i32",
+            I64 => "i64",
+            U32 => "u32",
+            U64 => "u64",
+            F32 => "f32",
+            F64 => "f64",
+        };
+
+        write!(f, "{}", s)
+    }
 }
 
 #[derive(Copy, Clone, Eq, PartialEq)]

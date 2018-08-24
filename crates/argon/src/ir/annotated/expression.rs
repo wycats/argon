@@ -4,7 +4,7 @@ use crate::prelude::*;
 use super::types::InferType;
 use super::Annotated;
 use codespan::ByteSpan;
-use crate::infer::{Constraint, Constraints};
+use crate::infer::{Constraint, Constraints, Why};
 use crate::ir::{ast, Span, Spanned};
 use crate::MathOperator;
 
@@ -56,22 +56,22 @@ impl Annotated<Expression> {
 
                 let args = args.iter().map(|a| a.ty.clone()).collect();
 
-                function.constraints() + arg_constraints + Constraints(Constraint(
+                function.constraints() + arg_constraints + Constraints(Constraint::double(
                     function.ty.clone(),
                     InferType::variable_function(args, ty.clone()),
                 ))
             }
             Expression::Const(constant) => match constant {
                 ast::ConstExpression::Bool(..) => {
-                    Constraints(Constraint::new(ty.clone(), InferType::bool()))
+                    Constraints(Constraint::double(ty.clone(), InferType::bool()))
                 }
 
-                ast::ConstExpression::Integer(..) => {
-                    Constraints(Constraint::new(ty.clone(), InferType::integer()))
+                ast::ConstExpression::Integer(inner) => {
+                    Constraints(Constraint::double(ty.clone(), InferType::integer(inner)))
                 }
 
-                ast::ConstExpression::Float(..) => {
-                    Constraints(Constraint::new(ty.clone(), InferType::float()))
+                ast::ConstExpression::Float(inner) => {
+                    Constraints(Constraint::double(ty.clone(), InferType::float(inner)))
                 }
             },
             Expression::VariableAccess(_) => Constraints::empty(),
@@ -80,10 +80,16 @@ impl Annotated<Expression> {
                 lhs: box lhs,
                 rhs: box rhs,
             } => {
+                let why = Why::Binary {
+                    left: lhs.span(),
+                    right: rhs.span(),
+                    expr: lhs.span().to(rhs.span()),
+                };
+
                 lhs.constraints()
                     + rhs.constraints()
-                    + Constraints(Constraint(ty.clone(), lhs.ty.clone()))
-                    + Constraints(Constraint(ty.clone(), rhs.ty.clone()))
+                    + Constraints(Constraint(ty.clone(), lhs.ty.clone(), why))
+                    + Constraints(Constraint(ty.clone(), rhs.ty.clone(), why))
             }
         }
     }

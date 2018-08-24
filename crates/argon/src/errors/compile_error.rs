@@ -1,19 +1,26 @@
 use crate::prelude::*;
 
 use crate::compile::MathOperator;
+use crate::infer::constraint::Why;
 use crate::ir::resolved::ResolveError;
 use crate::ir::{InferType, Type};
 use crate::parser::LalrpopParseError;
-use language_reporting::{Diagnostic, Label};
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum CompileError {
     ParseError(LalrpopParseError),
     ResolveError(ResolveError),
     TypeError(TypeError),
-    UnifyError(InferType, InferType),
+    UnifyError(UnifyError),
     LexError,
     Unimplemented,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct UnifyError {
+    pub left: InferType,
+    pub right: InferType,
+    pub why: Why,
 }
 
 impl fmt::Display for CompileError {
@@ -25,13 +32,10 @@ impl fmt::Display for CompileError {
 impl ToDiagnostic for CompileError {
     fn to_diagnostic(&self) -> language_reporting::Diagnostic {
         match self {
-            CompileError::UnifyError(left, right) => {
-                let left_label = Label::new_primary(left.span()).with_message("this");
-                let right_label = Label::new_primary(right.span()).with_message("this");
-
-                Diagnostic::new_error("Type Error")
-                    .with_label(left_label)
-                    .with_label(right_label)
+            CompileError::UnifyError(UnifyError { left, right, why }) => {
+                let mut diag = why.to_diagnostic();
+                diag.message = format!("Type Error: {} with {}", left, right);
+                diag
             }
 
             other => unimplemented!("Diagnostics for {:#?}", other),

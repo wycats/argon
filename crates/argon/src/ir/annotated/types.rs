@@ -60,17 +60,18 @@ impl ConstrainedType {
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
 pub enum InferType {
     Resolved(Spanned<Type>),
-    Constrained(ConstrainedType),
+    Constrained(Spanned<ConstrainedType>),
     Function(Vec<Spanned<Type>>, Spanned<Type>),
     VariableFunction(Vec<InferType>, Box<InferType>),
     Variable(TypeVar),
 }
 
-impl InferType {
-    pub fn span(&self) -> ByteSpan {
+impl Span for InferType {
+    fn span(&self) -> ByteSpan {
         match self {
             InferType::Resolved(ty) => ty.span,
             InferType::Variable(var) => var.span(),
+            InferType::Constrained(constrained) => constrained.span(),
             other => unimplemented!("turning {:?} into ByteSpan", other),
         }
     }
@@ -79,7 +80,7 @@ impl InferType {
 impl fmt::Display for InferType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            InferType::Resolved(ty) => write!(f, "{:?}", ty),
+            InferType::Resolved(ty) => write!(f, "{}", ty),
             InferType::Constrained(constrained) => write!(f, "{:?}", constrained),
             InferType::Function(params, ret) => write!(
                 f,
@@ -130,12 +131,12 @@ impl InferType {
         InferType::VariableFunction(params, box ret)
     }
 
-    crate fn integer() -> InferType {
-        InferType::Constrained(ConstrainedType::Integer)
+    crate fn integer<T: PartialEq + Debug>(span: &Spanned<T>) -> InferType {
+        InferType::Constrained(ConstrainedType::Integer.copy_span(span))
     }
 
-    crate fn float() -> InferType {
-        InferType::Constrained(ConstrainedType::Float)
+    crate fn float<T: PartialEq + Debug>(span: &Spanned<T>) -> InferType {
+        InferType::Constrained(ConstrainedType::Float.copy_span(span))
     }
 
     crate fn bool() -> InferType {

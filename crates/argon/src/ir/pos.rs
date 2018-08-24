@@ -11,6 +11,15 @@ pub struct Spanned<Node: PartialEq + Debug> {
     crate span: ByteSpan,
 }
 
+impl Spanned<()> {
+    pub fn synthetic(_name: &'static str) -> Spanned<()> {
+        Spanned {
+            node: (),
+            span: ByteSpan::new(ByteIndex(0), ByteIndex(0)),
+        }
+    }
+}
+
 impl<T: PartialEq + Debug> Span for Spanned<T> {
     fn span(&self) -> ByteSpan {
         self.span

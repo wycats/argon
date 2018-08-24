@@ -1,5 +1,6 @@
-use super::constraint::Constraints;
+use super::constraint::{Constraints, Why};
 use super::substitution::Substitution;
+use crate::errors::compile_error::UnifyError;
 use crate::ir::{InferType, TypeVar};
 use crate::pos::Spanned;
 use crate::CompileError;
@@ -29,7 +30,7 @@ impl Unify {
             let mut unify = UnifyOne { table: &mut table };
 
             for constraint in &constraints {
-                unify.constrain(&constraint.left, &constraint.right)?;
+                unify.constrain(&constraint.left, &constraint.right, constraint.why)?;
             }
         }
 
@@ -49,7 +50,12 @@ struct UnifyOne<'unify> {
 }
 
 impl UnifyOne<'unify> {
-    fn constrain(&mut self, left: &InferType, right: &InferType) -> Result<(), CompileError> {
+    fn constrain(
+        &mut self,
+        left: &InferType,
+        right: &InferType,
+        why: Why,
+    ) -> Result<(), CompileError> {
         trace!(target: "argon::unify::one", "+constraint {:?} {:?}", left, right);
 
         trace!(target: "argon::unify", "Constraining {:#?} + {:#?}", left, right);
@@ -66,18 +72,19 @@ impl UnifyOne<'unify> {
             }
 
             (InferType::Constrained(c), InferType::Resolved(r)) => {
-                if !c.unifies_ty(&r.node) {
+                if !c.node.unifies_ty(&r.node) {
                     println!("Failed to unify {:?} + {:?}", c, r);
 
-                    return Err(CompileError::UnifyError(
-                        InferType::Constrained(c.clone()),
-                        InferType::Resolved(r.clone()),
-                    ));
+                    return Err(CompileError::UnifyError(UnifyError {
+                        left: InferType::Constrained(c.clone()),
+                        right: InferType::Resolved(r.clone()),
+                        why,
+                    }));
                 };
             }
 
             (r @ InferType::Resolved(..), c @ InferType::Constrained(..)) => {
-                self.constrain(c, r)?
+                self.constrain(c, r, why)?
             }
 
             (InferType::Constrained(..), InferType::Constrained(..)) => {
@@ -86,25 +93,33 @@ impl UnifyOne<'unify> {
             }
 
             (InferType::Variable(var), value @ InferType::Resolved(..)) => {
-                self.table.unify_var_value(*var, value.clone())?;
-                self.recurse_left(*var, value)?;
+                self.table.unify_var_value(*var, value.clone()).map_err(
+                    |UnifyError { left, right, .. }| {
+                        CompileError::UnifyError(UnifyError { left, right, why })
+                    },
+                )?;
+                self.recurse_left(*var, value, why)?;
             }
 
             (value @ InferType::Resolved(..), var @ InferType::Variable(..)) => {
-                self.constrain(var, value)?;
+                self.constrain(var, value, why)?;
             }
 
             (InferType::Variable(left), InferType::Variable(right)) => {
-                self.table.unify_var_var(*left, *right)?;
-                self.recurse_both(*left, *right)?;
+                self.table.unify_var_var(*left, *right).map_err(
+                    |UnifyError { left, right, .. }| {
+                        CompileError::UnifyError(UnifyError { left, right, why })
+                    },
+                )?;
+                self.recurse_both(*left, *right, why)?;
             }
 
             (InferType::Variable(left), constrained @ InferType::Constrained(..)) => {
-                self.recurse_left(*left, constrained)?;
+                self.recurse_left(*left, constrained, why)?;
             }
 
             (constrained @ InferType::Constrained(..), var @ InferType::Variable(..)) => {
-                self.constrain(var, constrained)?;
+                self.constrain(var, constrained, why)?;
             }
 
             (
@@ -112,26 +127,26 @@ impl UnifyOne<'unify> {
                 InferType::VariableFunction(rparams, rret),
             ) => {
                 for (left, right) in lparams.iter().zip(rparams) {
-                    self.constrain(left, right)?;
+                    self.constrain(left, right, why)?;
                 }
 
-                self.constrain(lret, rret)?;
+                self.constrain(lret, rret, why)?;
             }
 
             (InferType::Variable(left), f @ InferType::VariableFunction(..)) => {
-                self.recurse_left(*left, f)?;
+                self.recurse_left(*left, f, why)?;
             }
 
             (f @ InferType::VariableFunction(..), v @ InferType::Variable(..)) => {
-                self.constrain(v, f)?;
+                self.constrain(v, f, why)?;
             }
 
             (InferType::Variable(left), f @ InferType::Function(..)) => {
-                self.recurse_left(*left, f)?;
+                self.recurse_left(*left, f, why)?;
             }
 
             (f @ InferType::Function(..), v @ InferType::Variable(..)) => {
-                self.constrain(v, f)?;
+                self.constrain(v, f, why)?;
             }
 
             (left, right) => unimplemented!("unifying constraints {:?} and {:?}", left, right),
@@ -142,17 +157,22 @@ impl UnifyOne<'unify> {
         Ok(())
     }
 
-    fn recurse_left(&mut self, var: TypeVar, ty: &InferType) -> Result<(), CompileError> {
+    fn recurse_left(&mut self, var: TypeVar, ty: &InferType, why: Why) -> Result<(), CompileError> {
         let probed_left = self.table.probe_value(var);
 
         if InferType::Variable(var) == probed_left {
             return Ok(());
         }
 
-        self.constrain(&probed_left, ty)
+        self.constrain(&probed_left, ty, why)
     }
 
-    fn recurse_both(&mut self, left: TypeVar, right: TypeVar) -> Result<(), CompileError> {
+    fn recurse_both(
+        &mut self,
+        left: TypeVar,
+        right: TypeVar,
+        why: Why,
+    ) -> Result<(), CompileError> {
         let probed_left = self.table.probe_value(left);
         let probed_right = self.table.probe_value(right);
 
@@ -160,7 +180,7 @@ impl UnifyOne<'unify> {
             return Ok(());
         }
 
-        self.constrain(&probed_left, &probed_right)
+        self.constrain(&probed_left, &probed_right, why)
     }
 }
 
@@ -185,6 +205,7 @@ mod tests {
     use super::UnifyTable;
     use crate::infer::constraint::{Constraint, Constraints};
     use crate::ir::InferType;
+    use crate::ir::Spanned;
 
     fn types() -> UnifyTable {
         UnifyTable::new()
@@ -194,8 +215,10 @@ mod tests {
     fn unifies_two_ints() {
         crate::init_logger();
 
-        let substitution =
-            types().unify(Constraints(Constraint(InferType::i32(), InferType::i32())));
+        let substitution = types().unify(Constraints(Constraint::double(
+            InferType::i32(),
+            InferType::i32(),
+        )));
 
         assert_eq!(substitution, Ok(Substitution::empty()));
     }
@@ -204,7 +227,7 @@ mod tests {
     fn unifies_two_bools() {
         crate::init_logger();
 
-        let substitution = types().unify(Constraints(Constraint(
+        let substitution = types().unify(Constraints(Constraint::double(
             InferType::bool(),
             InferType::bool(),
         )));
@@ -216,7 +239,7 @@ mod tests {
     fn unifies_two_functions() {
         crate::init_logger();
 
-        let substitution = types().unify(Constraints(Constraint(
+        let substitution = types().unify(Constraints(Constraint::double(
             InferType::variable_function(vec![InferType::bool()], InferType::bool()),
             InferType::variable_function(vec![InferType::bool()], InferType::bool()),
         )));
@@ -232,7 +255,8 @@ mod tests {
 
         let x = types.synthetic();
 
-        let substitution = types.unify(Constraints(Constraint(x.clone(), InferType::i32())));
+        let substitution =
+            types.unify(Constraints(Constraint::double(x.clone(), InferType::i32())));
         let expected = Substitution::from(&[(0, InferType::i32())]);
 
         assert_eq!(substitution, Ok(expected));
@@ -249,9 +273,9 @@ mod tests {
 
         // def add(x: i64) -> i64 { x + 50 }
 
-        let constraints = Constraint(t1.clone(), t2.clone())
-            + Constraint(t1.clone(), InferType::i64())
-            + Constraint(t2.clone(), InferType::integer());
+        let constraints = Constraint::double(t1.clone(), t2.clone())
+            + Constraint::double(t1.clone(), InferType::i64())
+            + Constraint::double(t2.clone(), InferType::integer(&Spanned::synthetic("test")));
 
         let substitution = types.unify(constraints);
         let expected = Substitution::from(&[(1, InferType::i64()), (0, InferType::i64())]);
@@ -268,7 +292,7 @@ mod tests {
         let t1 = types.synthetic();
         let t2 = types.synthetic();
 
-        let substitution = types.unify(Constraints(Constraint(
+        let substitution = types.unify(Constraints(Constraint::double(
             InferType::variable_function(vec![t1.clone()], InferType::bool()),
             InferType::variable_function(vec![InferType::i32()], t2.clone()),
         )));
@@ -289,11 +313,11 @@ mod tests {
         let t2 = types.synthetic();
         let t3 = types.synthetic();
 
-        let constraints = Constraint(t0.clone(), t1.clone())
-            + Constraint(t0.clone(), t2.clone())
-            + Constraint(t0.clone(), t3.clone())
-            + Constraint(t1.clone(), InferType::f64())
-            + Constraint(t2.clone(), InferType::float());
+        let constraints = Constraint::double(t0.clone(), t1.clone())
+            + Constraint::double(t0.clone(), t2.clone())
+            + Constraint::double(t0.clone(), t3.clone())
+            + Constraint::double(t1.clone(), InferType::f64())
+            + Constraint::double(t2.clone(), InferType::float(&Spanned::synthetic("test")));
 
         let substitution = types.unify(constraints).unwrap();
 

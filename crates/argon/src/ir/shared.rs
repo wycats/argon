@@ -36,6 +36,17 @@ pub enum Type {
     Void,
 }
 
+impl Display for Type {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Type::Math(math) => write!(f, "{}", math),
+            Type::Bool => write!(f, "boolean"),
+            Type::Void => write!(f, "void"),
+            other => unimplemented!("Display for {:?}", other),
+        }
+    }
+}
+
 #[derive(Debug, PartialEq, Eq, Ord, PartialOrd, Clone, Hash)]
 pub struct FunctionType {
     pub params: Vec<Type>,

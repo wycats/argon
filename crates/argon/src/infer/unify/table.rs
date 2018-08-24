@@ -1,9 +1,10 @@
+use crate::errors::compile_error::UnifyError;
 use crate::prelude::*;
 
 use super::Unify;
 use codespan::ByteSpan;
 use crate::annotated::{Annotated, RawTypeVar, TypeVar};
-use crate::infer::{Constraints, Substitution};
+use crate::infer::{Constraints, Substitution, Why};
 use crate::pos::Spanned;
 use crate::{CompileError, InferType};
 use ena::unify::{InPlaceUnificationTable, UnifyKey, UnifyValue};
@@ -27,9 +28,9 @@ impl UnifyKey for TypeVar {
 }
 
 impl UnifyValue for InferType {
-    type Error = CompileError;
+    type Error = UnifyError;
 
-    fn unify_values(a: &InferType, b: &InferType) -> Result<InferType, CompileError> {
+    fn unify_values(a: &InferType, b: &InferType) -> Result<InferType, UnifyError> {
         match (a, b) {
             (
                 InferType::Resolved(lhs @ Spanned { .. }),
@@ -45,7 +46,11 @@ impl UnifyValue for InferType {
 
             (InferType::Variable(..), other @ InferType::Variable(..)) => Ok(other.clone()),
 
-            _ => Err(CompileError::UnifyError(a.clone(), b.clone())),
+            _ => Err(UnifyError {
+                left: a.clone(),
+                right: b.clone(),
+                why: Why::Unimplemented(a.span(), b.span()),
+            }),
         }
     }
 }

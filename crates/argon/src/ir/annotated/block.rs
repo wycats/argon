@@ -47,7 +47,7 @@ impl Annotated<Block> {
     crate fn constraints(&self) -> Constraints {
         let Annotated { ty, item } = self;
 
-        let mut constraints = Constraints::empty() + Constraint(item.last_ty(), ty.clone());
+        let mut constraints = Constraints::empty() + Constraint::double(item.last_ty(), ty.clone());
 
         for expression in &item.expressions {
             constraints += expression.constraints();
